@@ -15,6 +15,7 @@ import com.fund.mapper.FundNavMapper;
 import com.fund.service.FundService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -78,6 +79,7 @@ public class FundServiceImpl implements FundService {
     }
     
     @Override
+    @Cacheable(value = "fund:detail", key = "#fundCode", unless = "#result == null")
     public FundInfoVO getFundDetail(String fundCode) {
         FundInfo fundInfo = fundInfoMapper.selectById(fundCode);
         if (fundInfo == null) {
@@ -87,6 +89,7 @@ public class FundServiceImpl implements FundService {
     }
     
     @Override
+    @Cacheable(value = "fund:search", key = "#keyword + '-' + #limit", unless = "#result == null or #result.isEmpty()")
     public List<FundInfoVO> searchSuggest(String keyword, Integer limit) {
         if (!StringUtils.hasText(keyword)) {
             return List.of();
@@ -108,25 +111,13 @@ public class FundServiceImpl implements FundService {
     }
     
     @Override
+    @Cacheable(value = "fund:metrics", key = "#fundCode", unless = "#result == null")
     public FundMetricsVO getLatestMetrics(String fundCode) {
         FundMetrics metrics = fundMetricsMapper.selectLatestByFundCode(fundCode);
         if (metrics == null) {
             return null;
         }
-        
-        FundMetricsVO vo = new FundMetricsVO();
-        vo.setFundCode(metrics.getFundCode());
-        vo.setCalcDate(metrics.getCalcDate());
-        vo.setReturn1m(metrics.getReturn1m());
-        vo.setReturn3m(metrics.getReturn3m());
-        vo.setReturn1y(metrics.getReturn1y());
-        vo.setReturn3y(metrics.getReturn3y());
-        vo.setSharpeRatio1y(metrics.getSharpeRatio1y());
-        vo.setMaxDrawdown1y(metrics.getMaxDrawdown1y());
-        vo.setVolatility1y(metrics.getVolatility1y());
-        vo.setQualityLevel(calculateQualityLevel(metrics));
-        
-        return vo;
+        return convertToFundMetricsVO(metrics);
     }
     
     @Override
@@ -180,6 +171,7 @@ public class FundServiceImpl implements FundService {
     }
     
     @Override
+    @Cacheable(value = "fund:ranking", key = "#sortBy + '-' + #fundType + '-' + #limit")
     public List<FundMetricsVO> getTopFunds(String sortBy, String fundType, Integer limit) {
         // 限制最大数量
         if (limit > 50) limit = 50;

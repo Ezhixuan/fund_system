@@ -22,18 +22,17 @@ spring:
       connection-timeout: 30000
       connection-test-query: SELECT 1
 
-# Redis disabled for now
-#  redis:
-#    host: 127.0.0.1
-#    port: 6379
-#    database: 0
-#    timeout: 3000ms
-#    lettuce:
-#      pool:
-#        max-active: 8
-#        max-idle: 8
-#        min-idle: 0
-#        max-wait: 1000ms
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    database: 0
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: 1000ms
 
 mybatis-plus:
   configuration:

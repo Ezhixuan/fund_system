@@ -58,14 +58,12 @@
             <version>3.0.3</version>
         </dependency>
         
-        <!-- Redisson (temporarily disabled) -->
-        <!--
+        <!-- Redisson -->
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
             <version>${redisson.version}</version>
         </dependency>
-        -->
         
         <!-- MySQL Connector -->
         <dependency>
