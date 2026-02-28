@@ -1,9 +1,5 @@
 # Ignore docs directory but keep skill files and tasks
 docs/*
-!docs/skill/
-!docs/skill/**
-!docs/tasks/
-!docs/tasks/**
 
 # Allow SQL files in tasks directory
 !docs/tasks/**/*.sql
