@@ -30,5 +30,5 @@ public interface FundNavMapper extends BaseMapper<FundNav> {
      */
     @Select("SELECT * FROM fund_nav WHERE fund_code = #{fundCode} " +
             "ORDER BY nav_date DESC LIMIT 1")
-    FundNav selectLatest(String fundCode);
+    FundNav selectLatestNav(String fundCode);
 }
