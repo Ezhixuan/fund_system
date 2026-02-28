@@ -31,4 +31,12 @@ public interface FundNavMapper extends BaseMapper<FundNav> {
     @Select("SELECT * FROM fund_nav WHERE fund_code = #{fundCode} " +
             "ORDER BY nav_date DESC LIMIT 1")
     FundNav selectLatestNav(String fundCode);
+    
+    /**
+     * 查询前一交易日净值
+     */
+    @Select("SELECT * FROM fund_nav WHERE fund_code = #{fundCode} " +
+            "AND nav_date < #{currentDate} " +
+            "ORDER BY nav_date DESC LIMIT 1")
+    FundNav selectPreviousNav(@Param("fundCode") String fundCode, @Param("currentDate") LocalDate currentDate);
 }
