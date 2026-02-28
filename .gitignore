@@ -1,0 +1,56 @@
+# Ignore docs directory
+docs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+.idea/
+*.iml
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+
+# Database
+*.sql
+*.db
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+
+# Backup
+*.bak
+*.backup
