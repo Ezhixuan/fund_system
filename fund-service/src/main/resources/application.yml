@@ -1,0 +1,85 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: fund-service
+  
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3307/fund_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: fund
+    password: fund123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      pool-name: FundHikariPool
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      connection-test-query: SELECT 1
+
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    database: 0
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: 1000ms
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    cache-enabled: true
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: com.fund.entity
+  global-config:
+    db-config:
+      id-type: none
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+logging:
+  level:
+    com.fund: debug
+    com.fund.mapper: debug
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+
+logging:
+  level:
+    com.fund: debug
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+
+logging:
+  level:
+    com.fund: info
+    com.fund.mapper: warn
