@@ -43,4 +43,20 @@ public interface FundService {
      * 获取近期净值
      */
     List<FundNavVO> getRecentNav(String fundCode, Integer days);
+    
+    /**
+     * 获取TOP基金排名
+     */
+    List<FundMetricsVO> getTopFunds(String sortBy, String fundType, Integer limit);
+    
+    /**
+     * 基金指标对比
+     */
+    List<FundMetricsVO> compareFunds(List<String> fundCodes);
+    
+    /**
+     * 按指标筛选基金
+     */
+    IPage<FundInfoVO> filterFundsByMetrics(IPage<FundInfoVO> page, String fundType,
+                                           Double minSharpe, Double maxDrawdown);
 }

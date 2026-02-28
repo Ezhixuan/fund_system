@@ -178,4 +178,107 @@ public class FundServiceImpl implements FundService {
         if (sharpe.compareTo(new BigDecimal("0.5")) >= 0) return "C";
         return "D";
     }
+    
+    @Override
+    public List<FundMetricsVO> getTopFunds(String sortBy, String fundType, Integer limit) {
+        // 限制最大数量
+        if (limit > 50) limit = 50;
+        if (limit < 1) limit = 10;
+        
+        // 验证排序字段
+        String orderBy = switch (sortBy) {
+            case "return1y" -> "return_1y";
+            case "return3y" -> "return_3y";
+            case "return1m" -> "return_1m";
+            case "return3m" -> "return_3m";
+            case "maxDrawdown" -> "max_drawdown_1y";
+            case "sharpe" -> "sharpe_ratio_1y";
+            default -> "sharpe_ratio_1y";
+        };
+        
+        // 查询TOP基金
+        List<FundMetrics> metricsList = fundMetricsMapper.selectTopByOrder(orderBy, fundType, limit);
+        
+        return metricsList.stream()
+                .map(this::convertToFundMetricsVO)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<FundMetricsVO> compareFunds(List<String> fundCodes) {
+        if (fundCodes == null || fundCodes.isEmpty()) {
+            return List.of();
+        }
+        
+        return fundCodes.stream()
+                .map(this::getLatestMetrics)
+                .filter(vo -> vo != null)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public IPage<FundInfoVO> filterFundsByMetrics(IPage<FundInfoVO> page, String fundType,
+                                                   Double minSharpe, Double maxDrawdown) {
+        // 先获取基金列表
+        LambdaQueryWrapper<FundInfo> wrapper = new LambdaQueryWrapper<>();
+        
+        if (StringUtils.hasText(fundType)) {
+            wrapper.eq(FundInfo::getFundType, fundType);
+        }
+        wrapper.eq(FundInfo::getStatus, 1);
+        
+        Page<FundInfo> pageParam = new Page<>(page.getCurrent(), page.getSize());
+        IPage<FundInfo> entityPage = fundInfoMapper.selectPage(pageParam, wrapper);
+        
+        // 过滤并转换
+        List<FundInfoVO> filteredList = entityPage.getRecords().stream()
+                .map(this::convertToFundInfoVO)
+                .filter(vo -> {
+                    FundMetricsVO metrics = getLatestMetrics(vo.getFundCode());
+                    if (metrics == null) return false;
+                    
+                    if (minSharpe != null) {
+                        if (metrics.getSharpeRatio1y() == null || 
+                            metrics.getSharpeRatio1y().doubleValue() < minSharpe) {
+                            return false;
+                        }
+                    }
+                    
+                    if (maxDrawdown != null) {
+                        if (metrics.getMaxDrawdown1y() == null || 
+                            metrics.getMaxDrawdown1y().doubleValue() > -maxDrawdown) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                })
+                .collect(Collectors.toList());
+        
+        page.setRecords(filteredList);
+        page.setTotal(filteredList.size());
+        return page;
+    }
+    
+    private FundMetricsVO convertToFundMetricsVO(FundMetrics metrics) {
+        FundMetricsVO vo = new FundMetricsVO();
+        vo.setFundCode(metrics.getFundCode());
+        vo.setCalcDate(metrics.getCalcDate());
+        vo.setReturn1m(metrics.getReturn1m());
+        vo.setReturn3m(metrics.getReturn3m());
+        vo.setReturn1y(metrics.getReturn1y());
+        vo.setReturn3y(metrics.getReturn3y());
+        vo.setSharpeRatio1y(metrics.getSharpeRatio1y());
+        vo.setMaxDrawdown1y(metrics.getMaxDrawdown1y());
+        vo.setVolatility1y(metrics.getVolatility1y());
+        
+        // 获取基金名称
+        FundInfo fundInfo = fundInfoMapper.selectById(metrics.getFundCode());
+        if (fundInfo != null) {
+            vo.setFundName(fundInfo.getFundName());
+        }
+        
+        vo.setQualityLevel(calculateQualityLevel(metrics));
+        return vo;
+    }
 }

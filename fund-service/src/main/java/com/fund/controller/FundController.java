@@ -1,10 +1,11 @@
 package com.fund.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fund.dto.ApiResponse;
 import com.fund.dto.FundInfoVO;
 import com.fund.dto.FundMetricsVO;
 import com.fund.dto.FundNavVO;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.fund.service.FundService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -91,5 +92,46 @@ public class FundController {
             @PathVariable String fundCode,
             @RequestParam(defaultValue = "30") Integer days) {
         return ApiResponse.success(fundService.getRecentNav(fundCode, days));
+    }
+
+    /**
+     * TOP基金排名
+     */
+    @GetMapping("/top")
+    public ApiResponse<List<FundMetricsVO>> getTopFunds(
+            @RequestParam(defaultValue = "sharpe") String sortBy,
+            @RequestParam(required = false) String fundType,
+            @RequestParam(defaultValue = "10") Integer limit) {
+        return ApiResponse.success(fundService.getTopFunds(sortBy, fundType, limit));
+    }
+
+    /**
+     * 基金指标对比
+     */
+    @GetMapping("/compare")
+    public ApiResponse<List<FundMetricsVO>> compareFunds(
+            @RequestParam String codes) {
+        if (codes == null || codes.isEmpty()) {
+            return ApiResponse.badRequest("codes参数不能为空");
+        }
+        List<String> codeList = List.of(codes.split(","));
+        if (codeList.size() > 5) {
+            return ApiResponse.badRequest("最多对比5只基金");
+        }
+        return ApiResponse.success(fundService.compareFunds(codeList));
+    }
+
+    /**
+     * 按指标筛选基金
+     */
+    @GetMapping("/filter")
+    public ApiResponse<IPage<FundInfoVO>> filterFunds(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer size,
+            @RequestParam(required = false) String fundType,
+            @RequestParam(required = false) Double minSharpe,
+            @RequestParam(required = false) Double maxDrawdown) {
+        Page<FundInfoVO> pageParam = new Page<>(page, size);
+        return ApiResponse.success(fundService.filterFundsByMetrics(pageParam, fundType, minSharpe, maxDrawdown));
     }
 }
