@@ -1,92 +1,103 @@
 <template>
-  <div class="fund-detail">
-    <!-- 基本信息 -->
-    <el-card v-loading="loading">
-      <div class="fund-header">
-        <div class="fund-title">
-          <h1>{{ fundInfo.fundName }}</h1>
-          <span class="fund-code">{{ fundInfo.fundCode }}</span>
-        </div>
-        <div class="fund-tags">
-          <el-tag>{{ fundInfo.fundType || '未知类型' }}</el-tag>
-          <el-tag v-if="fundInfo.riskLevel" :type="getRiskType(fundInfo.riskLevel)">
-            风险等级 R{{ fundInfo.riskLevel }}
-          </el-tag>
-          <el-tag v-if="metrics.qualityLevel" :type="getQualityType(metrics.qualityLevel)">
-            {{ metrics.qualityLevel }}级
-          </el-tag>
-        </div>      
-      </div>
-      
-      <!-- 交易信号 -->
-      <div v-if="signal" class="signal-box" :class="signal.signal?.toLowerCase()">
-        <div class="signal-header">
-          <span class="signal-type">{{ signal.signal }}</span>
-          <span class="signal-confidence">置信度: {{ signal.confidence }}%</span>
-        </div>
-        <p class="signal-reason">{{ signal.reason }}</p>
-      </div>
-    </el-card>
+  <div class="fund-detail" v-loading="loading">
+    <!-- 返回按钮 -->
+    <button class="back-btn" @click="$router.back()">
+      ← 返回
+    </button>
     
-    <!-- 指标卡片 -->
-    <el-row :gutter="20" class="metrics-row">
-      <el-col :span="6">
-        <el-card class="metric-card">
-          <div class="metric-label">夏普比率</div>
-          <div class="metric-value" :class="getMetricClass(metrics.sharpeRatio1y, 1)">
-            {{ formatNumber(metrics.sharpeRatio1y) }}
-          </div>
-          <div class="metric-desc">>1.5优秀</div>
-        </el-card>
-      </el-col>
+    <!-- 基金头部信息 -->
+    <div class="fund-header">
+      <div class="fund-title-section">
+        <h1 class="fund-name">{{ fundInfo.fundName }}</h1>
+        <div class="fund-meta">
+          <span class="fund-code">{{ fundInfo.fundCode }}</span>
+          <span v-if="fundInfo.fundType" class="tag">{{ fundInfo.fundType }}</span>
+          <span v-if="metrics.qualityLevel" class="tag" :class="'tag-' + getQualityColor(metrics.qualityLevel)">
+            {{ metrics.qualityLevel }}级
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 交易信号卡片 -->
+    <div v-if="signal" class="signal-card" :class="'signal-' + signal.signal">
+      <div class="signal-main">
+        <div class="signal-icon">{{ signalIcons[signal.signal] }}</div>
+        <div class="signal-content">
+          <div class="signal-type">{{ signalText[signal.signal] }}</div>
+          <div class="signal-confidence">置信度 {{ signal.confidence }}%</div>
+        </div>
+      </div>      
+      <div class="signal-reason">{{ signal.reason }}</div>
+    </div>
+    
+    <!-- 指标卡片网格 -->
+    <div class="metrics-grid">
+      <div class="metric-item">
+        <div class="metric-label">夏普比率</div>
+        <div class="metric-value" :class="getMetricClass(metrics.sharpeRatio1y, 1)">
+          {{ formatNumber(metrics.sharpeRatio1y) }}
+        </div>
+        <div class="metric-hint">>1.5 优秀</div>
+      </div>
       
-      <el-col :span="6">
-        <el-card class="metric-card">
-          <div class="metric-label">最大回撤</div>
-          <div class="metric-value" :class="getMetricClass(metrics.maxDrawdown1y, -20, true)">
-            {{ formatNumber(metrics.maxDrawdown1y) }}%
-          </div>
-          <div class="metric-desc"><20%良好</div>
-        </el-card>
-      </el-col>
+      <div class="metric-item">
+        <div class="metric-label">最大回撤</div>
+        <div class="metric-value negative">
+          {{ formatNumber(metrics.maxDrawdown1y) }}%
+        </div>
+        <div class="metric-hint">越小越好</div>
+      </div>
       
-      <el-col :span="6">
-        <el-card class="metric-card">
-          <div class="metric-label">近1年收益</div>
-          <div class="metric-value" :class="metrics.return1y > 0 ? 'positive' : 'negative'">
-            {{ formatPercent(metrics.return1y) }}
-          </div>
-          <div class="metric-desc">年化收益</div>
-        </el-card>
-      </el-col>
+      <div class="metric-item">
+        <div class="metric-label">近1年收益</div>
+        <div class="metric-value" :class="metrics.return1y > 0 ? 'positive' : 'negative'">
+          {{ formatPercent(metrics.return1y) }}
+        </div>
+        <div class="metric-hint">年化收益</div>
+      </div>
       
-      <el-col :span="6">
-        <el-card class="metric-card">
-          <div class="metric-label">波动率</div>
-          <div class="metric-value">
-            {{ formatNumber(metrics.volatility1y) }}%
-          </div>
-          <div class="metric-desc">年化波动</div>
-        </el-card>
-      </el-col>
-    </el-row>
+      <div class="metric-item">
+        <div class="metric-label">波动率</div>
+        <div class="metric-value">
+          {{ formatNumber(metrics.volatility1y) }}%
+        </div>
+        <div class="metric-hint">年化波动</div>
+      </div>
+    </div>
     
     <!-- 净值曲线 -->
-    <el-card class="chart-card">
-      <template #header><span>净值走势</span></template>
+    <div class="chart-section">
+      <div class="section-title">净值走势</div>      
       <div ref="chartRef" class="chart-container"></div>
-    </el-card>
+    </div>
     
-    <!-- 基金经理信息 -->
-    <el-card v-if="fundInfo.managerName">
-      <template #header><span>基金信息</span></template>
-      <el-descriptions :column="2">
-        <el-descriptions-item label="基金经理">{{ fundInfo.managerName }}</el-descriptions-item>
-        <el-descriptions-item label="基金公司">{{ fundInfo.companyName }}</el-descriptions-item>
-        <el-descriptions-item label="成立日期">{{ fundInfo.establishDate }}</el-descriptions-item>
-        <el-descriptions-item label="业绩基准">{{ fundInfo.benchmark }}</el-descriptions-item>
-      </el-descriptions>
-    </el-card>
+    <!-- 基金信息 -->
+    <div class="info-section">
+      <div class="section-title">基金信息</div>
+      
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-item-label">基金经理</div>
+          <div class="info-item-value">{{ fundInfo.managerName || '-' }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-item-label">基金公司</div>
+          <div class="info-item-value">{{ fundInfo.companyName || '-' }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-item-label">成立日期</div>
+          <div class="info-item-value">{{ fundInfo.establishDate || '-' }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-item-label">业绩基准</div>
+          <div class="info-item-value">{{ fundInfo.benchmark || '-' }}</div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -109,8 +120,20 @@ const navData = ref([])
 const chartRef = ref(null)
 let chart = null
 
-// 获取基金详情
-const fetchFundDetail = async () => {
+const signalIcons = {
+  BUY: '📈',
+  HOLD: '⏸️',
+  SELL: '📉',
+}
+
+const signalText = {
+  BUY: '建议买入',
+  HOLD: '建议持有',
+  SELL: '建议卖出',
+}
+
+// 获取数据
+const fetchData = async () => {
   loading.value = true
   try {
     const [infoRes, metricsRes, signalRes, navRes] = await Promise.all([
@@ -143,27 +166,50 @@ const initChart = () => {
   const values = navData.value.map(item => item.unitNav).reverse()
   
   const option = {
+    grid: {
+      left: 0,
+      right: 0,
+      top: 10,
+      bottom: 20,
+      containLabel: true,
+    },
     tooltip: {
       trigger: 'axis',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#e1e8ed',
+      borderWidth: 1,
+      textStyle: {
+        color: '#0f1419',
+      },
       formatter: (params) => {
         const p = params[0]
-        return `${p.name}<br/>净值: ${p.value}`
+        return `<div style="font-weight:600">${p.name}</div>
+                <div style="color:#00acee">净值: ${p.value}</div>`
       },
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
-      containLabel: true,
     },
     xAxis: {
       type: 'category',
       data: dates,
       boundaryGap: false,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        color: '#536471',
+        fontSize: 11,
+      },
     },
     yAxis: {
       type: 'value',
       scale: true,
+      splitLine: {
+        lineStyle: {
+          color: '#eff3f4',
+        },
+      },
+      axisLabel: {
+        color: '#536471',
+        fontSize: 11,
+      },
     },
     series: [
       {
@@ -173,13 +219,13 @@ const initChart = () => {
         smooth: true,
         symbol: 'none',
         lineStyle: {
-          color: '#409eff',
-          width: 2,
+          color: '#00acee',
+          width: 3,
         },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
-            { offset: 1, color: 'rgba(64, 158, 255, 0.05)' },
+            { offset: 0, color: 'rgba(0, 172, 238, 0.25)' },
+            { offset: 1, color: 'rgba(0, 172, 238, 0.02)' },
           ]),
         },
       },
@@ -189,31 +235,22 @@ const initChart = () => {
   chart.setOption(option)
 }
 
-// 窗口大小改变时重新渲染
 const handleResize = () => {
   chart?.resize()
 }
 
-// 工具函数
-const getRiskType = (level) => {
-  const types = ['', 'success', 'success', 'warning', 'danger', 'danger']
-  return types[level] || 'info'
+const getQualityColor = (level) => {
+  const colors = { S: 'danger', A: 'success', B: 'primary', C: 'warning', D: 'info' }
+  return colors[level] || 'primary'
 }
 
-const getQualityType = (level) => {
-  const types = { S: 'danger', A: 'success', B: 'primary', C: 'warning', D: 'info' }
-  return types[level] || 'info'
-}
-
-const getMetricClass = (value, threshold, reverse = false) => {
+const getMetricClass = (value, threshold) => {
   if (value === null || value === undefined) return ''
-  const val = Number(value)
-  const pass = reverse ? val > threshold : val >= threshold
-  return pass ? 'positive' : 'negative'
+  return Number(value) >= threshold ? 'positive' : ''
 }
 
 onMounted(() => {
-  fetchFundDetail()
+  fetchData()
   window.addEventListener('resize', handleResize)
 })
 
@@ -225,129 +262,237 @@ onUnmounted(() => {
 
 <style scoped>
 .fund-detail {
-  max-width: 1200px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
-.fund-header {
+/* 返回按钮 */
+.back-btn {
   margin-bottom: 20px;
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
 }
 
-.fund-title {
+.back-btn:hover {
+  background: var(--bg-hover);
+  color: var(--primary-color);
+}
+
+/* 基金头部 */
+.fund-header {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.fund-name {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.fund-meta {
   display: flex;
-  align-items: baseline;
-  gap: 15px;
-  margin-bottom: 15px;
-}
-
-.fund-title h1 {
-  font-size: 24px;
-  color: #303133;
-  margin: 0;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .fund-code {
-  font-size: 16px;
-  color: #909399;
+  font-size: 15px;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
-.fund-tags {
-  display: flex;
-  gap: 10px;
-}
-
-.signal-box {
-  margin-top: 20px;
-  padding: 20px;
-  border-radius: 8px;
+/* 信号卡片 */
+.signal-card {
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 20px;
   border: 2px solid;
+  transition: var(--transition);
 }
 
-.signal-box.buy {
-  background-color: #f0f9eb;
-  border-color: #67c23a;
+.signal-BUY {
+  background: rgba(0, 186, 124, 0.08);
+  border-color: #00ba7c;
 }
 
-.signal-box.hold {
-  background-color: #f4f4f5;
-  border-color: #909399;
+.signal-HOLD {
+  background: rgba(83, 100, 113, 0.08);
+  border-color: #536471;
 }
 
-.signal-box.sell {
-  background-color: #fef0f0;
-  border-color: #f56c6c;
+.signal-SELL {
+  background: rgba(244, 33, 46, 0.08);
+  border-color: #f4212e;
 }
 
-.signal-header {
+.signal-main {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.signal-icon {
+  font-size: 40px;
 }
 
 .signal-type {
-  font-size: 20px;
-  font-weight: bold;
+  font-size: 22px;
+  font-weight: 800;
 }
 
-.signal-box.buy .signal-type {
-  color: #67c23a;
-}
-
-.signal-box.sell .signal-type {
-  color: #f56c6c;
-}
+.signal-BUY .signal-type { color: #00ba7c; }
+.signal-HOLD .signal-type { color: #536471; }
+.signal-SELL .signal-type { color: #f4212e; }
 
 .signal-confidence {
   font-size: 14px;
-  color: #606266;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .signal-reason {
-  margin: 0;
-  color: #606266;
+  font-size: 15px;
+  color: var(--text-secondary);
   line-height: 1.6;
+  padding-left: 56px;
 }
 
-.metrics-row {
+/* 指标网格 */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
   margin-bottom: 20px;
 }
 
-.metric-card {
+.metric-item {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 24px;
   text-align: center;
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.metric-item:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .metric-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .metric-value {
   font-size: 28px;
-  font-weight: bold;
-  color: #303133;
-  margin-bottom: 5px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
 }
 
 .metric-value.positive {
-  color: #67c23a;
+  color: #00ba7c;
 }
 
 .metric-value.negative {
-  color: #f56c6c;
+  color: #f4212e;
 }
 
-.metric-desc {
+.metric-hint {
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--text-secondary);
 }
 
-.chart-card {
+/* 图表区域 */
+.chart-section {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
   margin-bottom: 20px;
 }
 
 .chart-container {
-  height: 350px;
+  height: 300px;
+}
+
+/* 信息区域 */
+.info-section {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  border: 1px solid var(--border-color);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.info-item {
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.info-item-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.info-item-value {
+  font-size: 15px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .fund-name {
+    font-size: 20px;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .metric-value {
+    font-size: 22px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
