@@ -8,10 +8,10 @@
           <p class="welcome-subtitle">智能分析，科学决策，让投资更简单</p>
           <div class="welcome-actions">
             <button class="btn-primary" @click="$router.push('/funds')">
-              🔍 开始探索
+              <el-icon><Search /></el-icon> 开始探索
             </button>
             <button class="btn-outline" @click="$router.push('/portfolio')">
-              💼 管理持仓
+              <el-icon><Wallet /></el-icon> 管理持仓
             </button>
           </div>
         </div>
@@ -21,7 +21,11 @@
     <!-- 统计卡片 -->
     <div class="stats-grid">
       <div class="stat-card" v-for="stat in stats" :key="stat.label">
-        <div class="stat-icon">{{ stat.icon }}</div>
+        <div class="stat-icon">
+          <el-icon :size="32">
+            <component :is="stat.icon" />
+          </el-icon>
+        </div>
         <div class="stat-info">
           <div class="stat-value">{{ stat.value }}</div>
           <div class="stat-label">{{ stat.label }}</div>
@@ -32,7 +36,10 @@
     <!-- TOP基金 -->
     <div class="section">
       <div class="section-header">
-        <h2 class="section-title">🏆 TOP 10 基金</h2>
+        <h2 class="section-title">
+          <el-icon :size="20" style="margin-right: 8px;"><Trophy /></el-icon>
+          TOP 10 基金
+        </h2>
         <router-link to="/funds" class="section-link">查看全部 →</router-link>
       </div>
       
@@ -83,10 +90,10 @@ const loading = ref(false)
 const topFunds = ref([])
 
 const stats = [
-  { icon: '📊', value: '26,180', label: '基金数量' },
-  { icon: '⭐', value: '1000+', label: '评级覆盖' },
-  { icon: '🤖', value: 'AI', label: '智能信号' },
-  { icon: '💰', value: '实时', label: '收益追踪' },
+  { icon: 'DataLine', value: '26,180', label: '基金数量' },
+  { icon: 'Star', value: '1000+', label: '评级覆盖' },
+  { icon: 'Cpu', value: 'AI', label: '智能信号' },
+  { icon: 'Money', value: '实时', label: '收益追踪' },
 ]
 
 onMounted(async () => {
@@ -250,6 +257,8 @@ const viewDetail = (fund) => {
   font-size: 18px;
   font-weight: 800;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
 }
 
 .section-link {

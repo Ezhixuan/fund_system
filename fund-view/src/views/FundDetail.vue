@@ -2,7 +2,7 @@
   <div class="fund-detail" v-loading="loading">
     <!-- 返回按钮 -->
     <button class="back-btn" @click="$router.back()">
-      ← 返回
+      <el-icon><ArrowLeft /></el-icon> 返回
     </button>
     
     <!-- 基金头部信息 -->
@@ -22,12 +22,16 @@
     <!-- 交易信号卡片 -->
     <div v-if="signal" class="signal-card" :class="'signal-' + signal.signal">
       <div class="signal-main">
-        <div class="signal-icon">{{ signalIcons[signal.signal] }}</div>
-        <div class="signal-content">
-          <div class="signal-type">{{ signalText[signal.signal] }}</div>
-          <div class="signal-confidence">置信度 {{ signal.confidence }}%</div>
-        </div>
-      </div>      
+          <div class="signal-icon" :class="'signal-icon-' + signal.signal">
+            <el-icon :size="40">
+              <component :is="signalIcons[signal.signal]" />
+            </el-icon>
+          </div>
+          <div class="signal-content">
+            <div class="signal-type">{{ signalText[signal.signal] }}</div>
+            <div class="signal-confidence">置信度 {{ signal.confidence }}%</div>
+          </div>
+        </div>      
       <div class="signal-reason">{{ signal.reason }}</div>
     </div>
     
@@ -121,9 +125,9 @@ const chartRef = ref(null)
 let chart = null
 
 const signalIcons = {
-  BUY: '📈',
-  HOLD: '⏸️',
-  SELL: '📉',
+  BUY: 'CircleCheckFilled',
+  HOLD: 'WarningFilled',
+  SELL: 'CircleCloseFilled',
 }
 
 const signalText = {
@@ -278,6 +282,9 @@ onUnmounted(() => {
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .back-btn:hover {
@@ -346,7 +353,21 @@ onUnmounted(() => {
 }
 
 .signal-icon {
-  font-size: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signal-icon-BUY {
+  color: #00ba7c;
+}
+
+.signal-icon-HOLD {
+  color: #536471;
+}
+
+.signal-icon-SELL {
+  color: #f4212e;
 }
 
 .signal-type {

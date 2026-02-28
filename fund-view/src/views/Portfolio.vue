@@ -11,7 +11,9 @@
     <!-- 组合概览卡片 -->
     <div class="overview-cards">
       <div class="overview-card">
-        <div class="overview-icon">💰</div>
+        <div class="overview-icon">
+          <el-icon :size="32"><Money /></el-icon>
+        </div>
         <div class="overview-info">
           <div class="overview-label">总市值</div>
           <div class="overview-value">{{ formatMoney(analysis.totalValue) }}</div>
@@ -19,7 +21,9 @@
       </div>
       
       <div class="overview-card">
-        <div class="overview-icon">📊</div>
+        <div class="overview-icon">
+          <el-icon :size="32"><DataLine /></el-icon>
+        </div>
         <div class="overview-info">
           <div class="overview-label">总成本</div>
           <div class="overview-value">{{ formatMoney(analysis.totalCost) }}</div>
@@ -27,7 +31,9 @@
       </div>
       
       <div class="overview-card">
-        <div class="overview-icon">📈</div>
+        <div class="overview-icon">
+          <el-icon :size="32"><TrendCharts /></el-icon>
+        </div>
         <div class="overview-info">
           <div class="overview-label">总收益</div>
           <div class="overview-value" :class="analysis.totalReturn >= 0 ? 'positive' : 'negative'">
@@ -37,7 +43,9 @@
       </div>
       
       <div class="overview-card">
-        <div class="overview-icon">🎯</div>
+        <div class="overview-icon">
+          <el-icon :size="32"><Aim /></el-icon>
+        </div>
         <div class="overview-info">
           <div class="overview-label">收益率</div>
           <div class="overview-value" :class="analysis.totalReturnRate >= 0 ? 'positive' : 'negative'">
@@ -104,13 +112,17 @@
             </div>
           </div>
           
-          <div class="holding-arrow">→</div>
+          <div class="holding-arrow">
+            <el-icon><ArrowRight /></el-icon>
+          </div>
         </div>
       </div>
       
       <!-- 空状态 -->
       <div v-else class="empty-state">
-        <div class="empty-icon">💼</div>
+        <div class="empty-icon">
+          <el-icon :size="64"><Wallet /></el-icon>
+        </div>
         <div class="empty-title">暂无持仓</div>
         <div class="empty-subtitle">点击下方按钮记录您的第一笔交易</div>
         

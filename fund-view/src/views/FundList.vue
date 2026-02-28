@@ -12,7 +12,7 @@
           @input="onKeywordInput"
         />
         <button class="search-btn" @click="handleSearch">
-          🔍
+          <el-icon :size="24"><Search /></el-icon>
         </button>
       </div>
       
@@ -82,14 +82,16 @@
           </div>
           
           <div class="fund-card-footer">
-            <span class="view-link">查看详情 →</span>
+            <span class="view-link">查看详情 <el-icon><ArrowRight /></el-icon></span>
           </div>
         </div>
       </div>
       
       <!-- 空状态 -->
       <div v-if="!loading && fundList.length === 0" class="empty-state">
-        <div class="empty-icon">🔍</div>
+        <div class="empty-icon">
+          <el-icon :size="64"><Search /></el-icon>
+        </div>
         <div class="empty-text">未找到相关基金</div>
         <div class="empty-subtext">尝试其他关键词或筛选条件</div>
       </div>
@@ -101,7 +103,7 @@
           :disabled="searchForm.page === 1"
           @click="changePage(searchForm.page - 1)"
         >
-          ← 上一页
+          <el-icon><ArrowLeft /></el-icon> 上一页
         </button>
         
         <span class="page-info">第 {{ searchForm.page }} 页</span>
@@ -111,7 +113,7 @@
           :disabled="searchForm.page * searchForm.size >= total"
           @click="changePage(searchForm.page + 1)"
         >
-          下一页 →
+          下一页 <el-icon><ArrowRight /></el-icon>
         </button>
       </div>
     </div>
