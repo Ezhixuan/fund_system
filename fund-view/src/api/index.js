@@ -51,6 +51,16 @@ export const fundApi = {
     return api.get(`/funds/${code}/signal`)
   },
   
+  // 实时估值
+  getFundEstimate(code) {
+    return api.get(`/funds/${code}/estimate`)
+  },
+  
+  // 刷新估值
+  refreshFundEstimate(code) {
+    return api.post(`/funds/${code}/estimate/refresh`)
+  },
+  
   // TOP排名
   getTopFunds(sortBy = 'sharpe', limit = 10) {
     return api.get('/funds/top', { params: { sortBy, limit } })

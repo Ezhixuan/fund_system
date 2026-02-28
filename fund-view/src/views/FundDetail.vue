@@ -70,6 +70,35 @@
       </div>
     </div>
     
+    <!-- 实时估值卡片 -->
+    <div v-if="estimate" class="estimate-card">
+      <div class="estimate-header">
+        <span class="estimate-title">实时估值</span>
+        <button 
+          class="refresh-btn" 
+          @click="refreshEstimate"
+          :disabled="refreshing"
+        >
+          <el-icon v-if="!refreshing"><Refresh /></el-icon>
+          <span v-else>刷新中...</span>
+        </button>
+      </div>
+      <div class="estimate-body">
+        <div class="estimate-change" :class="estimate.dailyChange >= 0 ? 'positive' : 'negative'">
+          {{ estimate.dailyChange >= 0 ? '+' : '' }}{{ estimate.dailyChange }}%
+        </div>
+        <div class="estimate-nav">
+          净值: {{ estimate.estimateNav }}
+          <span class="previous-nav">昨: {{ estimate.previousNav }}</span>
+        </div>
+        <div class="estimate-time">
+          更新: {{ estimate.estimateTime }}
+          <span v-if="estimate.marketOpen" class="market-status open">交易中</span>
+          <span v-else class="market-status closed">已收盘</span>
+        </div>
+      </div>
+    </div>
+    
     <!-- 净值曲线 -->
     <div class="chart-section">
       <div class="section-title">净值走势</div>      
@@ -120,6 +149,8 @@ const fundInfo = ref({})
 const metrics = ref({})
 const signal = ref(null)
 const navData = ref([])
+const estimate = ref(null)
+const refreshing = ref(false)
 
 const chartRef = ref(null)
 let chart = null
@@ -140,23 +171,38 @@ const signalText = {
 const fetchData = async () => {
   loading.value = true
   try {
-    const [infoRes, metricsRes, signalRes, navRes] = await Promise.all([
+    const [infoRes, metricsRes, signalRes, navRes, estimateRes] = await Promise.all([
       fundApi.getFundDetail(fundCode),
       fundApi.getFundMetrics(fundCode),
       fundApi.getFundSignal(fundCode),
       fundApi.getFundNav(fundCode, { days: 365 }),
+      fundApi.getFundEstimate(fundCode),
     ])
     
     if (infoRes.success) fundInfo.value = infoRes.data
     if (metricsRes.success) metrics.value = metricsRes.data
     if (signalRes.success) signal.value = signalRes.data
     if (navRes.success) navData.value = navRes.data || []
+    if (estimateRes.success) estimate.value = estimateRes.data
     
     nextTick(() => {
       initChart()
     })
   } finally {
     loading.value = false
+  }
+}
+
+// 刷新估值
+const refreshEstimate = async () => {
+  refreshing.value = true
+  try {
+    const res = await fundApi.refreshFundEstimate(fundCode)
+    if (res.success) {
+      estimate.value = res.data
+    }
+  } finally {
+    refreshing.value = false
   }
 }
 
@@ -442,6 +488,108 @@ onUnmounted(() => {
 .metric-hint {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+/* 估值卡片 */
+.estimate-card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.estimate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.estimate-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.refresh-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.estimate-body {
+  text-align: center;
+}
+
+.estimate-change {
+  font-size: 36px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.estimate-change.positive {
+  color: #00ba7c;
+}
+
+.estimate-change.negative {
+  color: #f4212e;
+}
+
+.estimate-nav {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.previous-nav {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-left: 12px;
+}
+
+.estimate-time {
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.market-status {
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.market-status.open {
+  background: rgba(0, 186, 124, 0.1);
+  color: #00ba7c;
+}
+
+.market-status.closed {
+  background: rgba(83, 100, 113, 0.1);
+  color: #536471;
 }
 
 /* 图表区域 */
