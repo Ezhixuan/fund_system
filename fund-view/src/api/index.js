@@ -39,6 +39,10 @@ export const fundApi = {
   
   // 净值历史
   getFundNav(code, params) {
+    // 如果有 days 参数，使用 /nav/recent 端点
+    if (params && params.days) {
+      return api.get(`/funds/${code}/nav/recent`, { params: { days: params.days } })
+    }
     return api.get(`/funds/${code}/nav`, { params })
   },
   

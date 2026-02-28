@@ -1,5 +1,6 @@
 package com.fund.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fund.dto.TradeSignal;
 import com.fund.entity.FundInfo;
 import com.fund.entity.FundMetrics;
@@ -34,16 +35,23 @@ public class SignalEngine {
     /**
      * 生成交易信号
      */
-    @Cacheable(value = "fund:signal", key = "#fundCode", unless = "#result == null")
+    @Cacheable(value = "fund:signal", key = "#fundCode + '_v2'", unless = "#result == null")
     public TradeSignal generateSignal(String fundCode) {
         long startTime = System.currentTimeMillis();
         
         try {
-            // 获取指标数据
+            // 获取指标数据 - 直接查询数据库
             FundMetrics metrics = metricsMapper.selectLatestByFundCode(fundCode);
+            
+            System.out.println("[DEBUG] Signal查询: fundCode=" + fundCode + ", found=" + (metrics != null));
+            
             if (metrics == null) {
+                System.out.println("[DEBUG] 未找到指标数据");
                 return TradeSignal.hold("暂无指标数据");
             }
+            
+            System.out.println("[DEBUG] 指标数据: sharpe=" + metrics.getSharpeRatio1y() + 
+                ", return1y=" + metrics.getReturn1y());
             
             // 获取基金信息
             FundInfo fundInfo = fundInfoMapper.selectById(fundCode);

@@ -1,5 +1,6 @@
 package com.fund.mapper;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.fund.entity.FundMetrics;
 import org.apache.ibatis.annotations.Mapper;
@@ -15,11 +16,9 @@ import java.util.List;
 public interface FundMetricsMapper extends BaseMapper<FundMetrics> {
     
     /**
-     * 查询基金最新指标
+     * 查询基金最新指标 - 使用XML配置
      */
-    @Select("SELECT * FROM fund_metrics WHERE fund_code = #{fundCode} " +
-            "ORDER BY calc_date DESC LIMIT 1")
-    FundMetrics selectLatestByFundCode(String fundCode);
+    FundMetrics selectLatestByFundCode(@Param("fundCode") String fundCode);
     
     /**
      * 查询TOP N基金（按夏普比率）
