@@ -44,6 +44,12 @@ public class PortfolioService {
      */
     @Transactional
     public void recordTrade(TradeRequest request) {
+        // 验证基金代码是否存在
+        FundInfo fundInfo = fundInfoMapper.selectById(request.getFundCode());
+        if (fundInfo == null) {
+            throw new IllegalArgumentException("基金代码不存在: " + request.getFundCode());
+        }
+        
         PortfolioTrade trade = new PortfolioTrade();
         trade.setFundCode(request.getFundCode());
         trade.setTradeDate(request.getTradeDate());
@@ -120,8 +126,10 @@ public class PortfolioService {
         
         // 收益
         BigDecimal totalReturn = currentValue.subtract(totalCost);
-        BigDecimal returnRate = totalReturn.divide(totalCost, 4, RoundingMode.HALF_UP)
-                .multiply(new BigDecimal("100"));
+        BigDecimal returnRate = totalCost.compareTo(BigDecimal.ZERO) > 0 
+                ? totalReturn.divide(totalCost, 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100"))
+                : BigDecimal.ZERO;
         
         HoldingVO holding = new HoldingVO();
         holding.setFundCode(fundCode);

@@ -79,7 +79,7 @@ public class FundServiceImpl implements FundService {
     }
     
     @Override
-    @Cacheable(value = "fund:detail", key = "#fundCode", unless = "#result == null")
+    @Cacheable(value = "fund:detail", key = "#fundCode + '_v2'", unless = "#result == null")
     public FundInfoVO getFundDetail(String fundCode) {
         FundInfo fundInfo = fundInfoMapper.selectById(fundCode);
         if (fundInfo == null) {

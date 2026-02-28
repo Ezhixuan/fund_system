@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fund.mapper.FundMetricsMapper">
+    
+    <resultMap id="BaseResultMap" type="com.fund.entity.FundMetrics">
+        <id property="id" column="id"/>
+        <result property="fundCode" column="fund_code"/>
+        <result property="calcDate" column="calc_date"/>
+        <result property="return1m" column="return_1m"/>
+        <result property="return3m" column="return_3m"/>
+        <result property="return1y" column="return_1y"/>
+        <result property="return3y" column="return_3y"/>
+        <result property="return5y" column="return_5y"/>
+        <result property="sharpeRatio1y" column="sharpe_ratio_1y"/>
+        <result property="sharpeRatio3y" column="sharpe_ratio_3y"/>
+        <result property="sortinoRatio1y" column="sortino_ratio_1y"/>
+        <result property="calmarRatio3y" column="calmar_ratio_3y"/>
+        <result property="informationRatio1y" column="information_ratio_1y"/>
+        <result property="maxDrawdown1y" column="max_drawdown_1y"/>
+        <result property="maxDrawdown3y" column="max_drawdown_3y"/>
+        <result property="volatility1y" column="volatility_1y"/>
+        <result property="volatility3y" column="volatility_3y"/>
+        <result property="alpha1y" column="alpha_1y"/>
+        <result property="beta1y" column="beta_1y"/>
+        <result property="trackingError1y" column="tracking_error_1y"/>
+        <result property="pePercentile" column="pe_percentile"/>
+        <result property="pbPercentile" column="pb_percentile"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    
+    <select id="selectLatestByFundCode" resultMap="BaseResultMap">
+        SELECT * FROM fund_metrics 
+        WHERE fund_code = #{fundCode}
+        ORDER BY calc_date DESC 
+        LIMIT 1
+    </select>
+    
+</mapper>
