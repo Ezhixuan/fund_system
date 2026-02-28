@@ -45,12 +45,15 @@ def create_parser() -> argparse.ArgumentParser:
   %(prog)s --action validate                       # 仅执行数据校验
   %(prog)s --action health                         # 检查系统健康状态
   %(prog)s --action alert                          # 执行告警检查
+  %(prog)s --action monitor                        # 显示监控面板
+  %(prog)s --action scheduler                      # 启动定时调度器
         '''
     )
     
     parser.add_argument(
         '--action', '-a',
-        choices=['list', 'basic', 'nav', 'portfolio', 'pipeline', 'validate', 'health', 'alert', 'test'],
+        choices=['list', 'basic', 'nav', 'portfolio', 'pipeline', 'validate', 
+                 'health', 'alert', 'monitor', 'scheduler', 'test'],
         required=True,
         help='采集类型'
     )
@@ -220,6 +223,21 @@ def main():
             trigger = AlertTrigger()
             trigger.check_all()
             print("\n✅ 告警检查执行完成")
+            return 0
+        
+        elif args.action == 'monitor':
+            # 显示监控面板
+            from scheduler.monitor import JobMonitor
+            monitor = JobMonitor()
+            monitor.print_dashboard()
+            return 0
+        
+        elif args.action == 'scheduler':
+            # 启动定时调度器
+            from scheduler.job_scheduler import FundJobScheduler
+            scheduler = FundJobScheduler()
+            scheduler.add_jobs()
+            scheduler.start()
             return 0
         
         elif args.action == 'test':
