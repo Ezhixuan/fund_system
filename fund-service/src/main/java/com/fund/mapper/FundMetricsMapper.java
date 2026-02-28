@@ -18,7 +18,7 @@ public interface FundMetricsMapper extends BaseMapper<FundMetrics> {
      */
     @Select("SELECT * FROM fund_metrics WHERE fund_code = #{fundCode} " +
             "ORDER BY calc_date DESC LIMIT 1")
-    FundMetrics selectLatest(String fundCode);
+    FundMetrics selectLatestByFundCode(String fundCode);
     
     /**
      * 查询TOP N基金（按夏普比率）

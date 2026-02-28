@@ -3,7 +3,6 @@ package com.fund.controller;
 import com.fund.dto.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,11 +23,9 @@ public class HealthController {
     private static final Logger log = LoggerFactory.getLogger(HealthController.class);
     
     private final DataSource dataSource;
-    private final StringRedisTemplate redisTemplate;
     
-    public HealthController(DataSource dataSource, StringRedisTemplate redisTemplate) {
+    public HealthController(DataSource dataSource) {
         this.dataSource = dataSource;
-        this.redisTemplate = redisTemplate;
     }
     
     /**
@@ -47,17 +44,7 @@ public class HealthController {
             status.put("database", "error: " + e.getMessage());
         }
         
-        // 检查Redis
-        try {
-            String pingResult = redisTemplate.getConnectionFactory()
-                    .getConnection()
-                    .ping();
-            status.put("redis", "pong".equals(pingResult) ? "connected" : "disconnected");
-        } catch (Exception e) {
-            log.error("Redis连接检查失败", e);
-            status.put("redis", "error: " + e.getMessage());
-        }
-        
+        status.put("redis", "disabled");
         status.put("status", "healthy");
         status.put("timestamp", System.currentTimeMillis());
         
