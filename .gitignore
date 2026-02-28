@@ -1,5 +1,7 @@
-# Ignore docs directory
-docs/
+# Ignore docs directory but keep skill files
+docs/*
+!docs/skill/
+!docs/skill/**
 
 # Python
 __pycache__/
