@@ -1,25 +1,20 @@
-package com.ezhixuan.fund.application.service.watchlist.impl;
+package com.fund.service.watchlist.impl;
 
-import com.ezhixuan.fund.application.service.watchlist.TradingCalendarService;
-import com.ezhixuan.fund.domain.entity.watchlist.TradingCalendar;
-import com.ezhixuan.fund.infrastructure.persistence.mapper.watchlist.TradingCalendarMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import com.fund.entity.watchlist.TradingCalendar;
+import com.fund.mapper.watchlist.TradingCalendarMapper;
+import com.fund.service.watchlist.TradingCalendarService;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-/**
- * 交易日历服务实现
- */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class TradingCalendarServiceImpl implements TradingCalendarService {
     
     private final TradingCalendarMapper calendarMapper;
+    
+    public TradingCalendarServiceImpl(TradingCalendarMapper calendarMapper) {
+        this.calendarMapper = calendarMapper;
+    }
     
     @Override
     public boolean isTradingDay(LocalDate date) {
@@ -34,12 +29,10 @@ public class TradingCalendarServiceImpl implements TradingCalendarService {
     
     @Override
     public boolean isTradingTime() {
-        // 首先判断是否为交易日
         if (!isTradingDay()) {
             return false;
         }
         
-        // 判断是否在交易时段
         LocalTime now = LocalTime.now();
         LocalTime morningStart = LocalTime.of(9, 30);
         LocalTime morningEnd = LocalTime.of(11, 30);
@@ -83,7 +76,6 @@ public class TradingCalendarServiceImpl implements TradingCalendarService {
         if (isTradingDay(today)) {
             return today;
         }
-        // 如果今天不是交易日，返回上一交易日
         return getPrevTradingDay(today);
     }
     

@@ -1,69 +1,53 @@
-package com.ezhixuan.fund.interfaces.rest.watchlist;
+package com.fund.controller.watchlist;
 
-import com.ezhixuan.fund.application.service.watchlist.WatchlistService;
-import com.ezhixuan.fund.common.response.ApiResponse;
-import com.ezhixuan.fund.domain.entity.watchlist.UserWatchlist;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import com.fund.dto.ApiResponse;
+import com.fund.entity.watchlist.UserWatchlist;
+import com.fund.service.watchlist.WatchlistService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
-/**
- * 关注列表控制器
- */
-@Slf4j
 @RestController
 @RequestMapping("/api/watchlist")
-@RequiredArgsConstructor
 public class WatchlistController {
+    
+    private static final Logger log = LoggerFactory.getLogger(WatchlistController.class);
     
     private final WatchlistService watchlistService;
     
-    /**
-     * 添加关注基金
-     */
+    public WatchlistController(WatchlistService watchlistService) {
+        this.watchlistService = watchlistService;
+    }
+    
     @PostMapping("/add")
     public ApiResponse<UserWatchlist> addWatchlist(@RequestBody WatchlistAddRequest request) {
         log.info("添加关注基金: {}", request.getFundCode());
-        
         UserWatchlist watchlist = watchlistService.addWatchlist(
             request.getFundCode(),
             request.getFundName(),
             request.getWatchType()
         );
-        
         return ApiResponse.success(watchlist);
     }
     
-    /**
-     * 获取关注列表
-     */
     @GetMapping("/list")
     public ApiResponse<List<UserWatchlist>> getWatchlist(
             @RequestParam(required = false) Integer type) {
-        
         List<UserWatchlist> list;
         if (type != null) {
             list = watchlistService.getWatchlistByType(type);
         } else {
             list = watchlistService.getAllWatchlist();
         }
-        
         return ApiResponse.success(list);
     }
     
-    /**
-     * 更新关注信息
-     */
     @PutMapping("/{fundCode}")
     public ApiResponse<UserWatchlist> updateWatchlist(
             @PathVariable String fundCode,
             @RequestBody WatchlistUpdateRequest request) {
-        
         log.info("更新关注基金: {}", fundCode);
-        
-        // 查询现有记录
         UserWatchlist existing = watchlistService.lambdaQuery()
                 .eq(UserWatchlist::getFundCode, fundCode)
                 .eq(UserWatchlist::getIsActive, 1)
@@ -73,7 +57,6 @@ public class WatchlistController {
             return ApiResponse.error("基金不在关注列表中");
         }
         
-        // 更新字段
         if (request.getWatchType() != null) {
             existing.setWatchType(request.getWatchType());
         }
@@ -94,13 +77,9 @@ public class WatchlistController {
         return ApiResponse.success(updated);
     }
     
-    /**
-     * 移除关注
-     */
     @DeleteMapping("/{fundCode}")
     public ApiResponse<String> removeWatchlist(@PathVariable String fundCode) {
         log.info("移除关注基金: {}", fundCode);
-        
         boolean success = watchlistService.removeWatchlist(fundCode);
         if (success) {
             return ApiResponse.success("移除成功");
@@ -109,18 +88,12 @@ public class WatchlistController {
         }
     }
     
-    /**
-     * 检查基金是否已关注
-     */
     @GetMapping("/{fundCode}/check")
     public ApiResponse<Boolean> isWatched(@PathVariable String fundCode) {
         boolean watched = watchlistService.isFundWatched(fundCode);
         return ApiResponse.success(watched);
     }
     
-    /**
-     * 从持仓导入
-     */
     @PostMapping("/import-from-portfolio")
     public ApiResponse<ImportResult> importFromPortfolio() {
         log.info("从持仓导入关注基金...");
@@ -128,36 +101,46 @@ public class WatchlistController {
         return ApiResponse.success(new ImportResult(count));
     }
     
-    /**
-     * 获取关注基金代码列表
-     */
     @GetMapping("/codes")
     public ApiResponse<List<String>> getWatchedFundCodes() {
         List<String> codes = watchlistService.getWatchedFundCodes();
         return ApiResponse.success(codes);
     }
     
-    // ==================== DTOs ====================
-    
-    @lombok.Data
     public static class WatchlistAddRequest {
         private String fundCode;
         private String fundName;
-        private Integer watchType; // 1-持有, 2-关注
+        private Integer watchType;
+        public String getFundCode() { return fundCode; }
+        public void setFundCode(String fundCode) { this.fundCode = fundCode; }
+        public String getFundName() { return fundName; }
+        public void setFundName(String fundName) { this.fundName = fundName; }
+        public Integer getWatchType() { return watchType; }
+        public void setWatchType(Integer watchType) { this.watchType = watchType; }
     }
     
-    @lombok.Data
     public static class WatchlistUpdateRequest {
         private Integer watchType;
         private java.math.BigDecimal targetReturn;
         private java.math.BigDecimal stopLoss;
         private String notes;
         private Integer sortOrder;
+        public Integer getWatchType() { return watchType; }
+        public void setWatchType(Integer watchType) { this.watchType = watchType; }
+        public java.math.BigDecimal getTargetReturn() { return targetReturn; }
+        public void setTargetReturn(java.math.BigDecimal targetReturn) { this.targetReturn = targetReturn; }
+        public java.math.BigDecimal getStopLoss() { return stopLoss; }
+        public void setStopLoss(java.math.BigDecimal stopLoss) { this.stopLoss = stopLoss; }
+        public String getNotes() { return notes; }
+        public void setNotes(String notes) { this.notes = notes; }
+        public Integer getSortOrder() { return sortOrder; }
+        public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
     }
     
-    @lombok.Data
-    @AllArgsConstructor
     public static class ImportResult {
         private int importedCount;
+        public ImportResult(int importedCount) { this.importedCount = importedCount; }
+        public int getImportedCount() { return importedCount; }
+        public void setImportedCount(int importedCount) { this.importedCount = importedCount; }
     }
 }
