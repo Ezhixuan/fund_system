@@ -5,7 +5,8 @@
 |------|------|
 | 任务ID | P4-02-01 |
 | 名称 | 监控告警-数据采集监控 |
-| 状态 | ⏳ 待开始 |
+| 状态 | 🔄 进行中 |
+| 开始时间 | 2026-03-01 |
 | 计划工期 | 1天 |
 | 依赖 | P1-04 |
 
@@ -21,15 +22,10 @@
 
 ## 实现步骤
 
-### 1. 创建监控服务
+### 1. 创建监控服务 ✅
 **文件**：`collector/monitor/collection_monitor.py`
 
-功能：
-- 查询各表最新数据日期
-- 统计今日采集记录数
-- 计算采集成功率
-
-### 2. 创建监控API
+### 2. 创建监控API ⏳
 **文件**：`fund-service/src/main/java/com/fund/controller/MonitorController.java`
 
 接口：
@@ -38,13 +34,16 @@ GET /api/monitor/collection/status    # 采集状态
 GET /api/monitor/collection/stats     # 采集统计
 ```
 
-### 3. 前端监控面板
+### 3. 前端监控面板 ⏳
 **文件**：`fund-view/src/views/Monitor.vue`
 
-展示：
-- 各表最新数据时间
-- 今日采集成功率
-- 异常数据提示
+---
+
+## 当前进度
+- [x] 步骤1: 创建监控服务
+- [ ] 步骤2: 创建监控API
+- [ ] 步骤3: 前端监控面板
+- [ ] 测试验收
 
 ---
 
@@ -55,5 +54,5 @@ GET /api/monitor/collection/stats     # 采集统计
 
 ---
 
-## 测试计划
-测试日志将记录在：[P4-02-01-test-log.md](./P4-02-01-test-log.md)
+## 测试日志
+详见：[P4-02-01-test-log.md](./P4-02-01-test-log.md)
