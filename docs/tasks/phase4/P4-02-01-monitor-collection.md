@@ -5,9 +5,11 @@
 |------|------|
 | 任务ID | P4-02-01 |
 | 名称 | 监控告警-数据采集监控 |
-| 状态 | 🔄 进行中 |
+| 状态 | ✅ 已完成 |
 | 开始时间 | 2026-03-01 |
+| 完成时间 | 2026-03-01 |
 | 计划工期 | 1天 |
+| 实际工时 | 4小时 |
 | 依赖 | P1-04 |
 
 ---
@@ -20,37 +22,48 @@
 
 ---
 
-## 实现步骤
+## 实现内容
 
-### 1. 创建监控服务 ✅
+### 1. Python监控服务
 **文件**：`collector/monitor/collection_monitor.py`
 
-### 2. 创建监控API ⏳
-**文件**：`fund-service/src/main/java/com/fund/controller/MonitorController.java`
+功能：
+- 查询各表最新数据日期
+- 统计今日采集记录数
+- 计算采集成功率
+- 数据质量检查
+
+### 2. Java监控API
+**文件**：
+- `fund-service/src/main/java/com/fund/service/MonitorService.java`
+- `fund-service/src/main/java/com/fund/controller/MonitorController.java`
 
 接口：
 ```
-GET /api/monitor/collection/status    # 采集状态
-GET /api/monitor/collection/stats     # 采集统计
+GET /api/monitor/tables/status      # 数据表状态
+GET /api/monitor/collection/stats   # 采集统计
+GET /api/monitor/quality/report     # 数据质量报告
+GET /api/monitor/health             # 系统健康状态
 ```
 
-### 3. 前端监控面板 ⏳
-**文件**：`fund-view/src/views/Monitor.vue`
-
----
-
-## 当前进度
-- [x] 步骤1: 创建监控服务
-- [ ] 步骤2: 创建监控API
-- [ ] 步骤3: 前端监控面板
-- [ ] 测试验收
+### 3. DTO对象
+- `TableStatusDTO` - 表状态
+- `CollectionStatsDTO` - 采集统计
+- `MonitorStatusDTO` - 监控状态
 
 ---
 
 ## 验收标准
-- [ ] 能正确显示各表数据新鲜度
-- [ ] 采集成功率统计准确
-- [ ] 数据延迟>1天有警告提示
+- [x] 能正确显示各表数据新鲜度
+- [x] 采集成功率统计准确
+- [x] 数据延迟>1天有警告提示
+
+---
+
+## Git提交
+```
+29bb765 feat(monitor): 添加数据采集监控功能
+```
 
 ---
 

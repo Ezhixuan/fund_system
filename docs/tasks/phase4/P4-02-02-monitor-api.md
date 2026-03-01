@@ -5,7 +5,8 @@
 |------|------|
 | 任务ID | P4-02-02 |
 | 名称 | 监控告警-API性能监控 |
-| 状态 | ⏳ 待开始 |
+| 状态 | 🔄 进行中 |
+| 开始时间 | 2026-03-01 |
 | 计划工期 | 1天 |
 | 依赖 | P4-02-01 |
 
@@ -21,25 +22,24 @@
 
 ## 实现步骤
 
-### 1. 添加性能拦截器
+### 1. 添加性能拦截器 ⏳
 **文件**：`fund-service/src/main/java/com/fund/interceptor/PerformanceInterceptor.java`
 
-功能：
-- 记录API响应时间
-- 统计慢查询
-
-### 2. 缓存监控
+### 2. 缓存监控 ⏳
 **文件**：`fund-service/src/main/java/com/fund/service/CacheMonitorService.java`
 
-功能：
-- 统计缓存命中率
-- 监控缓存大小
-
-### 3. 监控接口
+### 3. 监控接口 ⏳
 ```
 GET /api/monitor/api/performance    # API性能
 GET /api/monitor/cache/stats        # 缓存统计
 ```
+
+---
+
+## 当前进度
+- [ ] 步骤1: 性能拦截器
+- [ ] 步骤2: 缓存监控服务
+- [ ] 步骤3: 测试验收
 
 ---
 
@@ -50,5 +50,5 @@ GET /api/monitor/cache/stats        # 缓存统计
 
 ---
 
-## 测试计划
-测试日志将记录在：[P4-02-02-test-log.md](./P4-02-02-test-log.md)
+## 测试日志
+详见：[P4-02-02-test-log.md](./P4-02-02-test-log.md)

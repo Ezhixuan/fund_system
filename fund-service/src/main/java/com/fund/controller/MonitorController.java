@@ -2,8 +2,8 @@ package com.fund.controller;
 
 import com.fund.dto.ApiResponse;
 import com.fund.dto.CollectionStatsDTO;
-import com.fund.dto.MonitorStatusDTO;
 import com.fund.dto.TableStatusDTO;
+import com.fund.interceptor.PerformanceInterceptor;
 import com.fund.service.MonitorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +23,16 @@ import java.util.Map;
 public class MonitorController {
 
     private static final Logger log = LoggerFactory.getLogger(MonitorController.class);
-    
+
     private final MonitorService monitorService;
-    
-    public MonitorController(MonitorService monitorService) {
+    private final PerformanceInterceptor performanceInterceptor;
+
+    public MonitorController(MonitorService monitorService, 
+                            PerformanceInterceptor performanceInterceptor) {
         this.monitorService = monitorService;
+        this.performanceInterceptor = performanceInterceptor;
     }
-    
+
     /**
      * 获取数据表状态
      */
@@ -43,7 +46,7 @@ public class MonitorController {
             return ApiResponse.error("获取数据表状态失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 获取采集统计
      */
@@ -58,7 +61,7 @@ public class MonitorController {
             return ApiResponse.error("获取采集统计失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 获取数据质量报告
      */
@@ -72,7 +75,7 @@ public class MonitorController {
             return ApiResponse.error("获取数据质量报告失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 获取系统健康状态
      */
@@ -84,6 +87,40 @@ public class MonitorController {
         } catch (Exception e) {
             log.error("获取健康状态失败", e);
             return ApiResponse.error("获取健康状态失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取API性能统计
+     */
+    @GetMapping("/api/performance")
+    public ApiResponse<Map<String, Object>> getApiPerformance() {
+        try {
+            Map<String, Object> stats = performanceInterceptor.getStats();
+            Map<String, Object> overall = performanceInterceptor.getOverallStats();
+
+            Map<String, Object> result = new java.util.HashMap<>();
+            result.put("apis", stats);
+            result.put("overall", overall);
+
+            return ApiResponse.success(result);
+        } catch (Exception e) {
+            log.error("获取API性能统计失败", e);
+            return ApiResponse.error("获取API性能统计失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 清除API性能统计
+     */
+    @GetMapping("/api/performance/clear")
+    public ApiResponse<Void> clearApiPerformance() {
+        try {
+            performanceInterceptor.clearStats();
+            return ApiResponse.success(null);
+        } catch (Exception e) {
+            log.error("清除API性能统计失败", e);
+            return ApiResponse.error("清除API性能统计失败: " + e.getMessage());
         }
     }
 }
