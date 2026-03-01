@@ -30,3 +30,14 @@ const router = createRouter({
 })
 
 export default router
+
+// 关注列表路由
+{
+  path: '/watchlist',
+  name: 'Watchlist',
+  component: () => import('@/views/watchlist/index.vue'),
+  meta: {
+    title: '我的关注',
+    icon: 'star'
+  }
+}
