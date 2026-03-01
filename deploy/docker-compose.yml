@@ -70,7 +70,7 @@ services:
     image: nginx:alpine
     container_name: fund-nginx
     ports:
-      - "10080:80"
+      - "8888:80"
     volumes:
       - ../fund-view/dist:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro

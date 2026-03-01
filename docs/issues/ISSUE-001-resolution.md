@@ -23,17 +23,17 @@ try_files $uri $uri/ /index.html;
 ```yaml
 # docker-compose.yml
 ports:
-  - "10080:80"  # 绑定所有接口，而非 127.0.0.1:10080:80
+  - "8888:80"  # 绑定所有接口，而非 127.0.0.1:8888:80
 ```
 
 ## 验证结果
 
 ### curl 测试
 ```bash
-$ curl -I http://127.0.0.1:10080
+$ curl -I http://127.0.0.1:8888
 HTTP/1.1 200 OK
 
-$ curl -I http://localhost:10080
+$ curl -I http://localhost:8888
 HTTP/1.1 200 OK
 ```
 
@@ -57,7 +57,7 @@ HTTP/1.1 200 OK
 
 1. **使用 127.0.0.1 而非 localhost**
    ```
-   http://127.0.0.1:10080
+   http://127.0.0.1:8888
    ```
 
 2. **强制刷新浏览器缓存**

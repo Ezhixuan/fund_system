@@ -8,9 +8,9 @@ echo ""
 
 # 测试地址列表
 ADDRESSES=(
-    "http://127.0.0.1:10080"
-    "http://localhost:10080"
-    "http://0.0.0.0:10080"
+    "http://127.0.0.1:8888"
+    "http://localhost:8888"
+    "http://0.0.0.0:8888"
 )
 
 ALL_PASS=true
@@ -38,8 +38,8 @@ if [ "$ALL_PASS" = true ]; then
     echo "✅ 所有测试通过！服务运行正常"
     echo ""
     echo "请在浏览器中访问:"
-    echo "  http://127.0.0.1:10080"
-    echo "  http://localhost:10080"
+    echo "  http://127.0.0.1:8888"
+    echo "  http://localhost:8888"
     exit 0
 else
     echo "❌ 部分测试失败，请检查服务状态"

@@ -376,7 +376,7 @@ python -m fund_collector
 
 ### Docker 部署后无法访问前端 (macOS)
 
-**问题现象**: Docker Compose 启动成功，但浏览器无法访问 `http://127.0.0.1:10080`
+**问题现象**: Docker Compose 启动成功，但浏览器无法访问 `http://127.0.0.1:8888`
 
 **解决方案**:
 
@@ -409,7 +409,7 @@ python -m fund_collector
 
 4. **检查端口占用**:
    ```bash
-   lsof -i:10080
+   lsof -i:8888
    # 如果被占用，修改 docker-compose.yml 中的端口映射
    ```
 
