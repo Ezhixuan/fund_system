@@ -50,9 +50,9 @@ public class FundServiceImpl implements FundService {
         Page<FundInfo> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<FundInfo> wrapper = new LambdaQueryWrapper<>();
         
-        // 筛选条件
+        // 筛选条件 - 使用模糊匹配
         if (StringUtils.hasText(fundType)) {
-            wrapper.eq(FundInfo::getFundType, fundType);
+            wrapper.like(FundInfo::getFundType, fundType);
         }
         if (riskLevel != null) {
             wrapper.eq(FundInfo::getRiskLevel, riskLevel);

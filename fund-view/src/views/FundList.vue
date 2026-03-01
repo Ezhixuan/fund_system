@@ -173,10 +173,12 @@ const onKeywordInput = () => {
 }
 
 // 搜索
-const handleSearch = async () => {
+const handleSearch = async (resetPage = true) => {
   showSuggestions.value = false
   loading.value = true
-  searchForm.page = 1
+  if (resetPage) {
+    searchForm.page = 1
+  }
   try {
     const res = await fundApi.getFundList({ ...searchForm })
     if (res.success) {
@@ -191,13 +193,13 @@ const handleSearch = async () => {
 // 切换筛选
 const toggleFilter = (key, value) => {
   searchForm[key] = searchForm[key] === value ? '' : value
-  handleSearch()
+  handleSearch(true) // 筛选时重置页码
 }
 
 // 翻页
 const changePage = (page) => {
   searchForm.page = page
-  handleSearch()
+  handleSearch(false) // 翻页时不重置页码
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
