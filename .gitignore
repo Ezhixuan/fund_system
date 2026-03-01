@@ -1,8 +1,6 @@
 # Ignore docs directory but keep skill files and tasks
-docs/*
-
-# Allow SQL files in tasks directory
-!docs/tasks/**/*.sql
+!docs/tasks/
+!docs/tasks/**/*.md
 
 # Python
 __pycache__/
