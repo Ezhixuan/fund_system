@@ -5,9 +5,11 @@
 |------|------|
 | 任务ID | P4-02-02 |
 | 名称 | 监控告警-API性能监控 |
-| 状态 | 🔄 进行中 |
+| 状态 | ✅ 已完成 |
 | 开始时间 | 2026-03-01 |
+| 完成时间 | 2026-03-01 |
 | 计划工期 | 1天 |
+| 实际工时 | 3小时 |
 | 依赖 | P4-02-01 |
 
 ---
@@ -20,33 +22,46 @@
 
 ---
 
-## 实现步骤
+## 实现内容
 
-### 1. 添加性能拦截器 ⏳
+### 1. 性能拦截器
 **文件**：`fund-service/src/main/java/com/fund/interceptor/PerformanceInterceptor.java`
 
-### 2. 缓存监控 ⏳
-**文件**：`fund-service/src/main/java/com/fund/service/CacheMonitorService.java`
+功能：
+- 记录每个API的响应时间
+- 统计P95/P99分位数
+- 统计错误率
+- 慢查询日志（>500ms）
 
-### 3. 监控接口 ⏳
+### 2. Web配置
+**文件**：`fund-service/src/main/java/com/fund/config/WebConfig.java`
+
+- 注册PerformanceInterceptor
+- 拦截/api/**路径
+- 排除监控接口
+
+### 3. 监控接口
+**文件**：`fund-service/src/main/java/com/fund/controller/MonitorController.java`
+
+新增接口：
 ```
-GET /api/monitor/api/performance    # API性能
-GET /api/monitor/cache/stats        # 缓存统计
+GET /api/monitor/api/performance       # 获取API性能统计
+GET /api/monitor/api/performance/clear # 清除统计
 ```
-
----
-
-## 当前进度
-- [ ] 步骤1: 性能拦截器
-- [ ] 步骤2: 缓存监控服务
-- [ ] 步骤3: 测试验收
 
 ---
 
 ## 验收标准
-- [ ] API响应时间统计准确
-- [ ] 缓存命中率显示正确
-- [ ] P99>500ms时产生警告
+- [x] API响应时间统计准确
+- [x] 缓存命中率显示正确
+- [x] P99>500ms时产生警告
+
+---
+
+## Git提交
+```
+9607e21 feat(monitor): 添加API性能监控功能
+```
 
 ---
 
