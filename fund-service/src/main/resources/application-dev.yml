@@ -1,0 +1,22 @@
+# 开发环境配置
+# 注意：此配置仅用于开发，生产环境请使用环境变量或配置中心
+
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3307/fund_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: fund
+    password: ${DB_PASSWORD:fund123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    database: 0
+
+logging:
+  level:
+    com.fund: debug
+    com.fund.mapper: debug

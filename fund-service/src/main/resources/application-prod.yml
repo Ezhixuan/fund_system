@@ -1,0 +1,33 @@
+# 生产环境配置
+# 安全提示：生产环境必须使用环境变量配置密码，禁止硬编码
+
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:fund_system}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=true
+    username: ${DB_USER:fund}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    lettuce:
+      pool:
+        max-active: 32
+        max-idle: 16
+        min-idle: 8
+
+logging:
+  level:
+    com.fund: info
+    com.fund.mapper: warn
+
+management:
+  endpoint:
+    health:
+      show-details: when_authorized
