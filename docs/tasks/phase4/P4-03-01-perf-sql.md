@@ -5,7 +5,8 @@
 |------|------|
 | 任务ID | P4-03-01 |
 | 名称 | 性能优化-SQL查询优化 |
-| 状态 | ⏳ 待开始 |
+| 状态 | 🔄 进行中 |
+| 开始时间 | 2026-03-01 |
 | 计划工期 | 1天 |
 | 依赖 | 所有 |
 
@@ -18,32 +19,22 @@
 
 ## 实现步骤
 
-### 1. 慢查询分析
-使用MySQL慢查询日志，找出慢查询：
-```sql
--- 开启慢查询日志
-SET GLOBAL slow_query_log = 'ON';
-SET GLOBAL long_query_time = 1;
-```
+### 1. 慢查询分析 ⏳
+开启MySQL慢查询日志，分析慢查询
 
-### 2. 索引优化
-检查并添加必要索引：
-```sql
--- fund_nav表
-ALTER TABLE fund_nav ADD INDEX idx_fund_date (fund_code, nav_date DESC);
+### 2. 索引优化 ⏳
+检查并添加必要索引
 
--- fund_metrics表  
-ALTER TABLE fund_metrics ADD INDEX idx_fund_calc (fund_code, calc_date DESC);
+### 3. SQL优化 ⏳
+优化查询语句，避免SELECT *
 
--- portfolio_trade表
-ALTER TABLE portfolio_trade ADD INDEX idx_fund_date (fund_code, trade_date DESC);
-```
+---
 
-### 3. SQL优化
-优化查询语句：
-- 避免SELECT *
-- 添加LIMIT限制
-- 优化JOIN查询
+## 当前进度
+- [ ] 步骤1: 慢查询分析
+- [ ] 步骤2: 索引优化
+- [ ] 步骤3: SQL优化
+- [ ] 测试验收
 
 ---
 
@@ -54,5 +45,5 @@ ALTER TABLE portfolio_trade ADD INDEX idx_fund_date (fund_code, trade_date DESC)
 
 ---
 
-## 测试计划
-测试日志将记录在：[P4-03-01-test-log.md](./P4-03-01-test-log.md)
+## 测试日志
+详见：[P4-03-01-test-log.md](./P4-03-01-test-log.md)

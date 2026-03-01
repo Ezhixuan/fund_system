@@ -21,9 +21,10 @@ public interface FundMetricsMapper extends BaseMapper<FundMetrics> {
     FundMetrics selectLatestByFundCode(@Param("fundCode") String fundCode);
     
     /**
-     * 查询TOP N基金（按夏普比率）
+     * 查询TOP N基金（按夏普比率，优化：只查询必要字段）
      */
-    @Select("SELECT * FROM fund_metrics WHERE calc_date = #{date} " +
+    @Select("SELECT fund_code, calc_date, sharpe_ratio_1y, return_1y, max_drawdown_1y, volatility_1y, beta_1y, alpha_1y " +
+            "FROM fund_metrics WHERE calc_date = #{date} " +
             "ORDER BY sharpe_ratio_1y DESC LIMIT #{limit}")
     List<FundMetrics> selectTopBySharpe(String date, int limit);
     
