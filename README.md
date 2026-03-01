@@ -369,3 +369,66 @@ python -m fund_collector
 [回到顶部](#基金交易决策辅助系统)
 
 </div>
+
+---
+
+## 🐛 故障排除
+
+### Docker 部署后无法访问前端 (macOS)
+
+**问题现象**: Docker Compose 启动成功，但浏览器无法访问 `http://127.0.0.1:10080`
+
+**解决方案**:
+
+1. **运行网络诊断工具**:
+   ```bash
+   make check
+   # 或
+   ./scripts/network-check.sh
+   ```
+
+2. **检查防火墙设置** (macOS):
+   ```bash
+   # 检查防火墙状态
+   sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+   
+   # 如果已启用，临时关闭测试
+   sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+   ```
+
+3. **使用备选方案 - 前端开发模式**:
+   ```bash
+   # 停止 Nginx
+   cd deploy && docker-compose stop nginx
+   
+   # 启动前端开发服务器
+   cd ../fund-view && npm run dev
+   
+   # 访问 http://localhost:5174
+   ```
+
+4. **检查端口占用**:
+   ```bash
+   lsof -i:10080
+   # 如果被占用，修改 docker-compose.yml 中的端口映射
+   ```
+
+### 常见问题
+
+| 问题 | 解决方案 |
+|------|----------|
+| 数据库连接失败 | 检查 MySQL 容器健康状态: `docker logs fund-mysql` |
+| API 返回 500 错误 | 检查后端日志: `docker logs fund-api` |
+| 前端白屏 | 检查 Nginx 配置和前端构建: `docker logs fund-nginx` |
+| 端口冲突 | 修改 docker-compose.yml 中的端口映射 |
+
+---
+
+## 📞 技术支持
+
+如遇到问题，请按以下顺序排查:
+
+1. 查看本文档的 **故障排除** 章节
+2. 运行 `./scripts/network-check.sh` 进行诊断
+3. 查看 Issue 文档: `docs/issues/`
+4. 提交 Issue 到 GitHub: https://github.com/Ezhixuan/fund_system/issues

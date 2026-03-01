@@ -1,7 +1,7 @@
 # 基金系统 - Makefile
 # 常用命令快捷方式
 
-.PHONY: help setup dev build test clean deploy stats
+.PHONY: help setup dev build test clean deploy check stats
 
 # 默认显示帮助
 help:
@@ -13,6 +13,7 @@ help:
 	@echo "  make test     - 运行测试"
 	@echo "  make clean    - 清理构建文件"
 	@echo "  make deploy   - 部署到生产环境"
+	@echo "  make check    - 运行网络诊断"
 	@echo "  make stats    - 显示代码统计"
 	@echo "  make backup   - 备份数据"
 	@echo ""
@@ -54,6 +55,11 @@ clean:
 deploy:
 	@echo "Deploying to production..."
 	@cd deploy && ./start.sh
+
+# 网络诊断
+check:
+	@echo "Running network diagnostics..."
+	@./scripts/network-check.sh
 
 # 代码统计
 stats:
