@@ -2,6 +2,13 @@ server:
   port: 8080
   servlet:
     context-path: /
+  # 连接优化
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    max-connections: 10000
+    accept-count: 100
 
 spring:
   application:
@@ -15,7 +22,7 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       pool-name: FundHikariPool
-      maximum-pool-size: 10
+      maximum-pool-size: 20
       minimum-idle: 5
       idle-timeout: 600000
       max-lifetime: 1800000
@@ -29,24 +36,45 @@ spring:
     timeout: 3000ms
     lettuce:
       pool:
-        max-active: 8
+        max-active: 16
         max-idle: 8
-        min-idle: 0
+        min-idle: 4
         max-wait: 1000ms
 
   # 异步任务配置
   task:
     execution:
       pool:
-        core-size: 4
-        max-size: 8
-        queue-capacity: 100
+        core-size: 8
+        max-size: 16
+        queue-capacity: 200
         keep-alive: 60s
       thread-name-prefix: fund-async-
     scheduling:
       pool:
         size: 2
       thread-name-prefix: fund-scheduling-
+
+# Actuator 配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,httptrace
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
 
 mybatis-plus:
   configuration:
@@ -76,7 +104,7 @@ spring:
       on-profile: dev
   datasource:
     hikari:
-      maximum-pool-size: 5
+      maximum-pool-size: 10
       minimum-idle: 2
 
 logging:
@@ -90,13 +118,18 @@ spring:
       on-profile: prod
   datasource:
     hikari:
-      maximum-pool-size: 20
+      maximum-pool-size: 50
       minimum-idle: 10
 
   # 生产环境关闭SQL日志
   mybatis-plus:
     configuration:
       log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+management:
+  endpoint:
+    health:
+      show-details: when_authorized
 
 logging:
   level:
