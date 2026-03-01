@@ -83,7 +83,6 @@ public class PerfTestController {
         
         List<String> httpMetrics = metricNames.stream()
                 .filter(name -> name.startsWith("http.server.requests"))
-                .filter(name -> name.contains("fund"))
                 .collect(Collectors.toList());
         
         for (String metricName : httpMetrics) {
@@ -92,7 +91,7 @@ public class PerfTestController {
                 Map<String, Object> metricData = new HashMap<>();
                 metricData.put("name", metricName);
                 metricData.put("description", metric.getDescription());
-                metricData.put("measurements", metric.getMeasurements());
+                metricData.put("baseUnit", metric.getBaseUnit());
                 result.add(metricData);
             }
         }
@@ -141,42 +140,23 @@ public class PerfTestController {
     public ApiResponse<Map<String, Object>> jvmMetrics() {
         Map<String, Object> jvm = new HashMap<>();
         
-        // 堆内存
-        Map<String, Object> heap = new HashMap<>();
-        
         // 获取所有内存指标
         MetricsEndpoint.MetricDescriptor memoryUsed = metricsEndpoint.metric("jvm.memory.used", null);
-        if (memoryUsed != null && !memoryUsed.getMeasurements().isEmpty()) {
-            for (MetricsEndpoint.Sample sample : memoryUsed.getMeasurements()) {
-                String area = getTagValue(sample.getTags(), "area");
-                if ("heap".equals(area)) {
-                    heap.put("used", String.format("%.2f MB", sample.getValue() / 1024 / 1024));
-                }
-            }
-        }
-        
         MetricsEndpoint.MetricDescriptor memoryMax = metricsEndpoint.metric("jvm.memory.max", null);
+        MetricsEndpoint.MetricDescriptor memoryCommitted = metricsEndpoint.metric("jvm.memory.committed", null);
+        
+        // 堆内存
+        Map<String, Object> heap = new HashMap<>();
+        if (memoryUsed != null && !memoryUsed.getMeasurements().isEmpty()) {
+            heap.put("used", String.format("%.2f MB", memoryUsed.getMeasurements().get(0).getValue() / 1024 / 1024));
+        }
+        if (memoryCommitted != null && !memoryCommitted.getMeasurements().isEmpty()) {
+            heap.put("committed", String.format("%.2f MB", memoryCommitted.getMeasurements().get(0).getValue() / 1024 / 1024));
+        }
         if (memoryMax != null && !memoryMax.getMeasurements().isEmpty()) {
-            for (MetricsEndpoint.Sample sample : memoryMax.getMeasurements()) {
-                String area = getTagValue(sample.getTags(), "area");
-                if ("heap".equals(area)) {
-                    heap.put("max", String.format("%.2f MB", sample.getValue() / 1024 / 1024));
-                }
-            }
+            heap.put("max", String.format("%.2f MB", memoryMax.getMeasurements().get(0).getValue() / 1024 / 1024));
         }
         jvm.put("heap", heap);
-        
-        // 非堆内存
-        Map<String, Object> nonHeap = new HashMap<>();
-        if (memoryUsed != null && !memoryUsed.getMeasurements().isEmpty()) {
-            for (MetricsEndpoint.Sample sample : memoryUsed.getMeasurements()) {
-                String area = getTagValue(sample.getTags(), "area");
-                if ("nonheap".equals(area)) {
-                    nonHeap.put("used", String.format("%.2f MB", sample.getValue() / 1024 / 1024));
-                }
-            }
-        }
-        jvm.put("nonHeap", nonHeap);
         
         // GC信息
         Map<String, Object> gc = new HashMap<>();
@@ -186,7 +166,7 @@ public class PerfTestController {
         }
         MetricsEndpoint.MetricDescriptor gcTime = metricsEndpoint.metric("jvm.gc.pause.sum", null);
         if (gcTime != null && !gcTime.getMeasurements().isEmpty()) {
-            gc.put("pauseTime", String.format("%.2f ms", gcTime.getMeasurements().get(0).getValue() * 1000));
+            gc.put("pauseTimeMs", String.format("%.2f", gcTime.getMeasurements().get(0).getValue() * 1000));
         }
         jvm.put("gc", gc);
         
@@ -200,22 +180,13 @@ public class PerfTestController {
         if (peakThreadCount != null && !peakThreadCount.getMeasurements().isEmpty()) {
             threads.put("peak", peakThreadCount.getMeasurements().get(0).getValue().intValue());
         }
+        MetricsEndpoint.MetricDescriptor daemonThreadCount = metricsEndpoint.metric("jvm.threads.daemon", null);
+        if (daemonThreadCount != null && !daemonThreadCount.getMeasurements().isEmpty()) {
+            threads.put("daemon", daemonThreadCount.getMeasurements().get(0).getValue().intValue());
+        }
         jvm.put("threads", threads);
         
         return ApiResponse.success(jvm);
-    }
-    
-    /**
-     * 从标签列表中获取指定key的值
-     */
-    private String getTagValue(List<MetricsEndpoint.Sample.Tag> tags, String key) {
-        if (tags == null) return null;
-        for (MetricsEndpoint.Sample.Tag tag : tags) {
-            if (tag.getTag().equals(key)) {
-                return tag.getValue();
-            }
-        }
-        return null;
     }
     
     /**
@@ -224,6 +195,8 @@ public class PerfTestController {
     @GetMapping("/metrics")
     public ApiResponse<List<String>> listMetrics() {
         Set<String> names = metricsEndpoint.listNames().getNames();
-        return ApiResponse.success(new ArrayList<>(names));
+        List<String> sortedNames = new ArrayList<>(names);
+        Collections.sort(sortedNames);
+        return ApiResponse.success(sortedNames);
     }
 }
