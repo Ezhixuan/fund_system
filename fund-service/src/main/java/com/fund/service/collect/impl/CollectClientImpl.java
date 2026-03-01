@@ -3,13 +3,13 @@ package com.fund.service.collect.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fund.dto.ApiResponse;
 import com.fund.service.collect.CollectClient;
-import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,8 +19,7 @@ public class CollectClientImpl implements CollectClient {
     
     private static final Logger log = LoggerFactory.getLogger(CollectClientImpl.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final OkHttpClient httpClient = new OkHttpClient();
-    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+    private final RestTemplate restTemplate = new RestTemplate();
     
     @Value("${collector.url:http://localhost:5000}")
     private String collectorUrl;
@@ -33,34 +32,28 @@ public class CollectClientImpl implements CollectClient {
             Map<String, String> requestBody = new HashMap<>();
             requestBody.put("fundCode", fundCode);
             
-            RequestBody body = RequestBody.create(
-                objectMapper.writeValueAsString(requestBody), 
-                JSON
-            );
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
             
-            Request request = new Request.Builder()
-                .url(url)
-                .post(body)
-                .build();
+            HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
             
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    log.error("采集服务调用失败: {}", response.code());
-                    return ApiResponse.error("采集服务调用失败");
-                }
-                
-                String responseBody = response.body().string();
-                Map<String, Object> result = objectMapper.readValue(responseBody, Map.class);
-                
-                if (Boolean.TRUE.equals(result.get("success"))) {
-                    return ApiResponse.success((Map<String, Object>) result.get("data"));
-                } else {
-                    return ApiResponse.error((String) result.get("error"));
-                }
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+            
+            if (response.getStatusCode() != HttpStatus.OK) {
+                log.error("采集服务调用失败: {}", response.getStatusCode());
+                return ApiResponse.error("采集服务调用失败");
             }
-        } catch (IOException e) {
+            
+            Map<String, Object> result = response.getBody();
+            
+            if (result != null && Boolean.TRUE.equals(result.get("success"))) {
+                return ApiResponse.success((Map<String, Object>) result.get("data"));
+            } else {
+                return ApiResponse.error((String) (result != null ? result.get("error") : "未知错误"));
+            }
+        } catch (Exception e) {
             log.error("采集服务调用异常: {}", e.getMessage());
-            return ApiResponse.error("采集服务不可用");
+            return ApiResponse.error("采集服务不可用: " + e.getMessage());
         }
     }
     
@@ -72,34 +65,28 @@ public class CollectClientImpl implements CollectClient {
             Map<String, List<String>> requestBody = new HashMap<>();
             requestBody.put("fundCodes", fundCodes);
             
-            RequestBody body = RequestBody.create(
-                objectMapper.writeValueAsString(requestBody), 
-                JSON
-            );
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
             
-            Request request = new Request.Builder()
-                .url(url)
-                .post(body)
-                .build();
+            HttpEntity<Map<String, List<String>>> request = new HttpEntity<>(requestBody, headers);
             
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    log.error("批量采集服务调用失败: {}", response.code());
-                    return ApiResponse.error("批量采集服务调用失败");
-                }
-                
-                String responseBody = response.body().string();
-                Map<String, Object> result = objectMapper.readValue(responseBody, Map.class);
-                
-                if (Boolean.TRUE.equals(result.get("success"))) {
-                    return ApiResponse.success((Map<String, Object>) result.get("data"));
-                } else {
-                    return ApiResponse.error((String) result.get("error"));
-                }
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+            
+            if (response.getStatusCode() != HttpStatus.OK) {
+                log.error("批量采集服务调用失败: {}", response.getStatusCode());
+                return ApiResponse.error("批量采集服务调用失败");
             }
-        } catch (IOException e) {
+            
+            Map<String, Object> result = response.getBody();
+            
+            if (result != null && Boolean.TRUE.equals(result.get("success"))) {
+                return ApiResponse.success((Map<String, Object>) result.get("data"));
+            } else {
+                return ApiResponse.error((String) (result != null ? result.get("error") : "未知错误"));
+            }
+        } catch (Exception e) {
             log.error("批量采集服务调用异常: {}", e.getMessage());
-            return ApiResponse.error("采集服务不可用");
+            return ApiResponse.error("采集服务不可用: " + e.getMessage());
         }
     }
     
@@ -107,16 +94,9 @@ public class CollectClientImpl implements CollectClient {
     public boolean healthCheck() {
         try {
             String url = collectorUrl + "/health";
-            
-            Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .build();
-            
-            try (Response response = httpClient.newCall(request).execute()) {
-                return response.isSuccessful();
-            }
-        } catch (IOException e) {
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            return response.getStatusCode() == HttpStatus.OK;
+        } catch (Exception e) {
             log.warn("采集服务健康检查失败: {}", e.getMessage());
             return false;
         }
