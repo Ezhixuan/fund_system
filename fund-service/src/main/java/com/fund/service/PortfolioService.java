@@ -1,5 +1,6 @@
 package com.fund.service;
 
+import com.fund.dto.HoldingUpdateRequest;
 import com.fund.dto.HoldingVO;
 import com.fund.dto.PortfolioAnalysis;
 import com.fund.dto.TradeRequest;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.*;
 
 /**
@@ -211,5 +213,107 @@ public class PortfolioService {
         analysis.setQualityDistribution(qualityDist);
         
         return analysis;
+    }
+    
+    /**
+     * 更新持仓（修改份额或成本价）
+     */
+    @Transactional
+    public void updateHolding(String fundCode, HoldingUpdateRequest request) {
+        // 修改份额
+        if (request.getTotalShares() != null) {
+            adjustShares(fundCode, request.getTotalShares());
+        }
+        
+        // 修改成本价
+        if (request.getAvgCost() != null) {
+            adjustCost(fundCode, request.getAvgCost(), request.getRemark());
+        }
+    }
+    
+    /**
+     * 调整份额
+     */
+    private void adjustShares(String fundCode, BigDecimal targetShares) {
+        HoldingVO current = calculateHolding(fundCode);
+        if (current == null) {
+            throw new IllegalArgumentException("持仓不存在: " + fundCode);
+        }
+        
+        BigDecimal diff = targetShares.subtract(current.getTotalShares());
+        if (diff.compareTo(BigDecimal.ZERO) == 0) {
+            return;
+        }
+        
+        // 使用当前净值作为调整价格
+        FundNav latestNav = fundNavMapper.selectLatestNav(fundCode);
+        BigDecimal price = latestNav != null ? latestNav.getUnitNav() : current.getCurrentNav();
+        
+        PortfolioTrade trade = new PortfolioTrade();
+        trade.setFundCode(fundCode);
+        trade.setTradeDate(LocalDate.now());
+        trade.setTradeType(diff.compareTo(BigDecimal.ZERO) > 0 ? 1 : 2); // 买入或卖出
+        trade.setTradeShare(diff.abs());
+        trade.setTradePrice(price);
+        trade.setTradeAmount(diff.abs().multiply(price));
+        trade.setTradeFee(BigDecimal.ZERO);
+        trade.setRemark("持仓调整-份额");
+        
+        tradeMapper.insert(trade);
+    }
+    
+    /**
+     * 调整成本价
+     */
+    private void adjustCost(String fundCode, BigDecimal targetCost, String remark) {
+        HoldingVO current = calculateHolding(fundCode);
+        if (current == null) {
+            throw new IllegalArgumentException("持仓不存在: " + fundCode);
+        }
+        
+        // 计算新的总成本
+        BigDecimal newTotalCost = targetCost.multiply(current.getTotalShares());
+        BigDecimal costDiff = newTotalCost.subtract(current.getTotalCost());
+        
+        if (costDiff.compareTo(BigDecimal.ZERO) == 0) {
+            return;
+        }
+        
+        // 添加成本调整交易
+        PortfolioTrade trade = new PortfolioTrade();
+        trade.setFundCode(fundCode);
+        trade.setTradeDate(LocalDate.now());
+        trade.setTradeType(costDiff.compareTo(BigDecimal.ZERO) > 0 ? 1 : 2);
+        trade.setTradeShare(BigDecimal.ZERO); // 份额不变
+        trade.setTradePrice(BigDecimal.ZERO);
+        trade.setTradeAmount(costDiff.abs());
+        trade.setTradeFee(BigDecimal.ZERO);
+        trade.setRemark("持仓调整-成本" + (remark != null ? ": " + remark : ""));
+        
+        tradeMapper.insert(trade);
+    }
+    
+    /**
+     * 删除持仓（清仓）
+     */
+    @Transactional
+    public void deleteHolding(String fundCode) {
+        HoldingVO current = calculateHolding(fundCode);
+        if (current == null) {
+            throw new IllegalArgumentException("持仓不存在: " + fundCode);
+        }
+        
+        // 添加卖出交易，清空所有份额
+        PortfolioTrade trade = new PortfolioTrade();
+        trade.setFundCode(fundCode);
+        trade.setTradeDate(LocalDate.now());
+        trade.setTradeType(2); // 卖出
+        trade.setTradeShare(current.getTotalShares());
+        trade.setTradePrice(current.getCurrentNav());
+        trade.setTradeAmount(current.getTotalShares().multiply(current.getCurrentNav()));
+        trade.setTradeFee(BigDecimal.ZERO);
+        trade.setRemark("持仓删除-清仓");
+        
+        tradeMapper.insert(trade);
     }
 }

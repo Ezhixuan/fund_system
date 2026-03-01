@@ -1,6 +1,7 @@
 package com.fund.controller;
 
 import com.fund.dto.ApiResponse;
+import com.fund.dto.HoldingUpdateRequest;
 import com.fund.dto.HoldingVO;
 import com.fund.dto.PortfolioAnalysis;
 import com.fund.dto.TradeRequest;
@@ -27,8 +28,12 @@ public class PortfolioController {
      */
     @PostMapping("/trade")
     public ApiResponse<Void> recordTrade(@RequestBody TradeRequest request) {
-        portfolioService.recordTrade(request);
-        return ApiResponse.success(null);
+        try {
+            portfolioService.recordTrade(request);
+            return ApiResponse.success(null);
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.badRequest(e.getMessage());
+        }
     }
     
     /**
@@ -40,11 +45,31 @@ public class PortfolioController {
     }
     
     /**
-     * 获取单个基金持仓
+     * 更新持仓
      */
-    @GetMapping("/holding/{fundCode}")
-    public ApiResponse<HoldingVO> getHolding(@PathVariable String fundCode) {
-        return ApiResponse.success(portfolioService.calculateHolding(fundCode));
+    @PutMapping("/holdings/{fundCode}")
+    public ApiResponse<Void> updateHolding(
+            @PathVariable String fundCode,
+            @RequestBody HoldingUpdateRequest request) {
+        try {
+            portfolioService.updateHolding(fundCode, request);
+            return ApiResponse.success(null);
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.badRequest(e.getMessage());
+        }
+    }
+    
+    /**
+     * 删除持仓（清仓）
+     */
+    @DeleteMapping("/holdings/{fundCode}")
+    public ApiResponse<Void> deleteHolding(@PathVariable String fundCode) {
+        try {
+            portfolioService.deleteHolding(fundCode);
+            return ApiResponse.success(null);
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.badRequest(e.getMessage());
+        }
     }
     
     /**
