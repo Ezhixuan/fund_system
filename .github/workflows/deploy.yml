@@ -1,0 +1,33 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download backend artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: fund-service-jar
+        path: fund-service/target
+    
+    - name: Download frontend artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: fund-view-dist
+        path: fund-view/dist
+    
+    - name: Deploy to server
+      # 这里需要配置服务器 SSH 密钥
+      # 示例使用 rsync 部署
+      run: |
+        echo "部署步骤需要配置服务器连接信息"
+        echo "建议使用: scp, rsync, 或 docker-compose"
