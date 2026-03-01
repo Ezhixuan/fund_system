@@ -112,6 +112,15 @@
             </div>
           </div>
           
+          <div class="holding-actions">
+            <button class="action-btn edit" @click.stop="openEditDialog(holding)">
+              <el-icon><Edit /></el-icon>
+            </button>
+            <button class="action-btn delete" @click.stop="confirmDelete(holding)">
+              <el-icon><Delete /></el-icon>
+            </button>
+          </div>
+          
           <div class="holding-arrow">
             <el-icon><ArrowRight /></el-icon>
           </div>
@@ -211,6 +220,37 @@
         </div>
       </div>
     </div>
+    
+    <!-- 编辑持仓弹窗 -->
+    <div v-if="showEditDialog" class="dialog-overlay" @click.self="showEditDialog = false">
+      <div class="dialog">
+        <div class="dialog-header">
+          <h3>编辑持仓</h3>
+          <button class="dialog-close" @click="showEditDialog = false">×</button>
+        </div>        
+        <div class="dialog-body">
+          <div class="form-group">
+            <label>基金</label>
+            <div class="form-static">{{ editForm.fundName }}</div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>份额</label>
+              <input v-model="editForm.totalShares" type="number" class="form-input" placeholder="0.00" step="0.01" />
+            </div>            
+            <div class="form-group">
+              <label>成本价</label>
+              <input v-model="editForm.avgCost" type="number" class="form-input" placeholder="0.0000" step="0.0001" />
+            </div>
+          </div>
+        </div>        
+        <div class="dialog-footer">
+          <button class="btn-outline" @click="showEditDialog = false">取消</button>
+          <button class="btn-primary" @click="submitEdit">保存</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -286,6 +326,58 @@ const submitTrade = async () => {
 // 查看详情
 const viewDetail = (holding) => {
   router.push(`/fund/${holding.fundCode}`)
+}
+
+// 编辑持仓
+const showEditDialog = ref(false)
+const editForm = reactive({
+  fundCode: '',
+  fundName: '',
+  totalShares: 0,
+  avgCost: 0,
+})
+
+const openEditDialog = (holding) => {
+  editForm.fundCode = holding.fundCode
+  editForm.fundName = holding.fundName
+  editForm.totalShares = holding.totalShares
+  editForm.avgCost = holding.avgCost
+  showEditDialog.value = true
+}
+
+const submitEdit = async () => {
+  try {
+    const res = await portfolioApi.updateHolding(editForm.fundCode, {
+      totalShares: Number(editForm.totalShares),
+      avgCost: Number(editForm.avgCost),
+    })
+    if (res.success) {
+      ElMessage.success('修改成功')
+      showEditDialog.value = false
+      fetchData()
+    }
+  } catch (error) {
+    ElMessage.error('修改失败')
+  }
+}
+
+// 删除持仓
+const confirmDelete = (holding) => {
+  if (confirm(`确定要删除 ${holding.fundName} 的持仓吗？此操作将清空所有份额。`)) {
+    deleteHolding(holding.fundCode)
+  }
+}
+
+const deleteHolding = async (fundCode) => {
+  try {
+    const res = await portfolioApi.deleteHolding(fundCode)
+    if (res.success) {
+      ElMessage.success('删除成功')
+      fetchData()
+    }
+  } catch (error) {
+    ElMessage.error('删除失败')
+  }
 }
 
 // 工具函数
@@ -489,6 +581,37 @@ onMounted(() => {
   display: block;
 }
 
+/* 持仓操作按钮 */
+.holding-actions {
+  display: flex;
+  gap: 8px;
+  margin-right: 12px;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.action-btn.delete:hover {
+  border-color: #f4212e;
+  color: #f4212e;
+}
+
 /* 空状态 */
 .empty-state {
   text-align: center;
@@ -667,6 +790,15 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+.form-static {
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 /* 响应式 */

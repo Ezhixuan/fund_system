@@ -83,6 +83,16 @@ export const portfolioApi = {
   recordTrade(data) {
     return api.post('/portfolio/trade', data)
   },
+  
+  // 更新持仓
+  updateHolding(fundCode, data) {
+    return api.put(`/portfolio/holdings/${fundCode}`, data)
+  },
+  
+  // 删除持仓
+  deleteHolding(fundCode) {
+    return api.delete(`/portfolio/holdings/${fundCode}`)
+  },
 }
 
 export default api
