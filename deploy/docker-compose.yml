@@ -65,18 +65,12 @@ services:
     networks:
       - fund_net
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
   nginx:
     image: nginx:alpine
     container_name: fund-nginx
     ports:
-      - "127.0.0.1:10080:80"
+      - "10080:80"
     volumes:
       - ../fund-view/dist:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
@@ -84,11 +78,6 @@ services:
       - java-backend
     networks:
       - fund_net
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
 volumes:
   mysql_data:
