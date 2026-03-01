@@ -25,4 +25,16 @@ public interface FundInfoMapper extends BaseMapper<FundInfo> {
     @Select("SELECT * FROM fund_info WHERE (fund_name LIKE CONCAT('%', #{keyword}, '%') " +
             "OR fund_code LIKE CONCAT('%', #{keyword}, '%')) AND status = 1")
     List<FundInfo> searchByKeyword(String keyword);
+    
+    /**
+     * 获取所有基金代码
+     */
+    @Select("SELECT fund_code FROM fund_info WHERE status = 1")
+    List<String> selectAllFundCodes();
+    
+    /**
+     * 根据规模排序获取TOP N基金
+     */
+    @Select("SELECT * FROM fund_info WHERE status = 1 ORDER BY current_scale DESC LIMIT #{limit}")
+    List<FundInfo> selectTopByScale(int limit);
 }
