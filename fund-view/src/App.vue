@@ -38,6 +38,7 @@
 
 <script setup>
 const navItems = [
+  { path: '/monitor', name: '🔍 监控' },
   { path: '/', name: '首页' },
   { path: '/funds', name: '基金搜索' },
   { path: '/watchlist', name: '关注列表' },

@@ -30,6 +30,15 @@ const routes = [
       title: '我的关注',
       icon: 'star'
     }
+  },
+  {
+    path: '/monitor',
+    name: 'Monitor',
+    component: () => import('@/views/Monitor.vue'),
+    meta: {
+      title: '系统监控',
+      icon: 'monitor'
+    }
   }
 ]
 
