@@ -1,21 +1,20 @@
 package com.fund.controller;
 
 import com.fund.dto.ApiResponse;
-import com.fund.service.FundDataFetchService;
+import com.fund.entity.ApiCallLog;
+import com.fund.service.ApiTraceService;
+import com.fund.service.collect.CollectClient;
 import com.fund.service.collect.CollectResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
- * 监控控制器
- * 提供系统监控、数据查询和手动刷新接口
+ * 监控控制器 v2 - 链路追踪与原始数据查询
  */
 @RestController
 @RequestMapping("/api/monitor")
@@ -24,123 +23,88 @@ public class MonitorController {
     private static final Logger log = LoggerFactory.getLogger(MonitorController.class);
 
     @Autowired
-    private FundDataFetchService fundDataFetchService;
+    private ApiTraceService traceService;
+
+    @Autowired
+    private CollectClient collectClient;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     /**
-     * 手动刷新基金基本信息
+     * 获取链路追踪日志
      */
-    @PostMapping("/refresh/{fundCode}/info")
-    public ApiResponse<Map<String, Object>> refreshFundInfo(@PathVariable String fundCode) {
-        log.info("手动刷新基金[{}]基本信息", fundCode);
+    @GetMapping("/traces")
+    public ApiResponse<Map<String, Object>> getTraces(
+            @RequestParam(required = false) String apiType,
+            @RequestParam(defaultValue = "50") int limit) {
         
-        CollectResult result = fundDataFetchService.refreshFundInfo(fundCode);
+        List<ApiCallLog> traces = traceService.getRecentTraces(apiType, limit);
+        ApiTraceService.TraceStats stats = traceService.getTraceStats(apiType, 60);
         
         Map<String, Object> data = new HashMap<>();
-        data.put("fundCode", fundCode);
-        data.put("success", result.isSuccess());
-        data.put("message", result.isSuccess() ? "刷新成功" : result.getMessage());
-        
-        return result.isSuccess() 
-            ? ApiResponse.success(data) 
-            : ApiResponse.error(result.getMessage());
-    }
-
-    /**
-     * 手动刷新基金指标数据
-     */
-    @PostMapping("/refresh/{fundCode}/metrics")
-    public ApiResponse<Map<String, Object>> refreshFundMetrics(@PathVariable String fundCode) {
-        log.info("手动刷新基金[{}]指标数据", fundCode);
-        
-        CollectResult result = fundDataFetchService.refreshFundMetrics(fundCode);
-        
-        Map<String, Object> data = new HashMap<>();
-        data.put("fundCode", fundCode);
-        data.put("success", result.isSuccess());
-        data.put("message", result.isSuccess() ? "刷新成功" : result.getMessage());
-        
-        return result.isSuccess() 
-            ? ApiResponse.success(data) 
-            : ApiResponse.error(result.getMessage());
-    }
-
-    /**
-     * 手动刷新基金NAV历史
-     */
-    @PostMapping("/refresh/{fundCode}/nav")
-    public ApiResponse<Map<String, Object>> refreshFundNav(@PathVariable String fundCode) {
-        log.info("手动刷新基金[{}]NAV历史", fundCode);
-        
-        CollectResult result = fundDataFetchService.refreshNavHistory(fundCode);
-        
-        Map<String, Object> data = new HashMap<>();
-        data.put("fundCode", fundCode);
-        data.put("success", result.isSuccess());
-        data.put("count", result.isSuccess() && result.getData() != null 
-            ? ((List) result.getData()).size() : 0);
-        
-        return result.isSuccess() 
-            ? ApiResponse.success(data) 
-            : ApiResponse.error(result.getMessage());
-    }
-
-    /**
-     * 一键刷新基金所有数据
-     */
-    @PostMapping("/refresh/{fundCode}/all")
-    public ApiResponse<Map<String, Object>> refreshFundAll(@PathVariable String fundCode) {
-        log.info("一键刷新基金[{}]所有数据", fundCode);
-        
-        Map<String, Object> results = new HashMap<>();
-        results.put("fundCode", fundCode);
-        
-        // 刷新基本信息
-        CollectResult infoResult = fundDataFetchService.refreshFundInfo(fundCode);
-        results.put("info", infoResult.isSuccess());
-        
-        // 刷新指标
-        CollectResult metricsResult = fundDataFetchService.refreshFundMetrics(fundCode);
-        results.put("metrics", metricsResult.isSuccess());
-        
-        // 刷新NAV历史
-        CollectResult navResult = fundDataFetchService.refreshNavHistory(fundCode);
-        results.put("nav", navResult.isSuccess());
-        
-        boolean allSuccess = infoResult.isSuccess() && metricsResult.isSuccess() && navResult.isSuccess();
-        results.put("allSuccess", allSuccess);
-        
-        return ApiResponse.success(results);
-    }
-
-    /**
-     * 批量刷新基金数据
-     */
-    @PostMapping("/refresh/batch")
-    public ApiResponse<Map<String, Object>> batchRefreshFunds(@RequestBody List<String> fundCodes) {
-        log.info("批量刷新{}只基金数据", fundCodes.size());
-        
-        if (fundCodes.size() > 10) {
-            return ApiResponse.error("单次最多刷新10只基金");
-        }
-        
-        List<String> results = fundDataFetchService.batchRefreshFunds(fundCodes);
-        
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", fundCodes.size());
-        data.put("results", results);
+        data.put("traces", traces);
+        data.put("stats", stats);
         
         return ApiResponse.success(data);
     }
 
     /**
-     * 获取Python采集服务健康状态
+     * 直接查询Python原始数据（绕过Java处理）
      */
-    @GetMapping("/health/collect")
-    public ApiResponse<Map<String, Object>> getCollectHealth() {
-        // 通过调用FundDataFetchService的一个简单方法检查
-        Map<String, Object> health = new HashMap<>();
-        health.put("service", "fund-collect");
-        health.put("status", "connected");
-        return ApiResponse.success(health);
+    @GetMapping("/raw/python/{fundCode}")
+    public ApiResponse<Map<String, Object>> getPythonRawData(
+            @PathVariable String fundCode,
+            @RequestParam String type) {
+        
+        log.info("直接查询Python原始数据: {} type={}", fundCode, type);
+        
+        try {
+            // 直接调用Python服务，不经过业务逻辑处理
+            String url = "http://fund-collect:5000/api/collect/" + type + "/" + fundCode;
+            Map<String, Object> result = restTemplate.getForObject(url, Map.class);
+            
+            return ApiResponse.success(result);
+        } catch (Exception e) {
+            log.error("查询Python原始数据失败: {}", e.getMessage());
+            return ApiResponse.error("Python查询失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 对比Java处理前后的数据
+     */
+    @GetMapping("/compare/{fundCode}")
+    public ApiResponse<Map<String, Object>> compareData(@PathVariable String fundCode) {
+        Map<String, Object> comparison = new HashMap<>();
+        
+        // 1. Python原始数据
+        try {
+            String pythonUrl = "http://fund-collect:5000/api/collect/info/" + fundCode;
+            Map<String, Object> pythonRaw = restTemplate.getForObject(pythonUrl, Map.class);
+            comparison.put("pythonRaw", pythonRaw);
+        } catch (Exception e) {
+            comparison.put("pythonRaw", Map.of("error", e.getMessage()));
+        }
+        
+        // 2. Java处理后的CollectResult
+        CollectResult result = collectClient.collectFundInfo(fundCode);
+        comparison.put("javaProcessed", Map.of(
+            "success", result.isSuccess(),
+            "errorCode", result.getErrorCode() != null ? result.getErrorCode() : "",
+            "message", result.getMessage() != null ? result.getMessage() : "",
+            "data", result.getData() != null ? result.getData().toString() : "null"
+        ));
+        
+        return ApiResponse.success(comparison);
+    }
+
+    /**
+     * 链路统计
+     */
+    @GetMapping("/trace-stats")
+    public ApiResponse<ApiTraceService.TraceStats> getTraceStats(
+            @RequestParam(required = false) String apiType) {
+        return ApiResponse.success(traceService.getTraceStats(apiType, 60));
     }
 }
