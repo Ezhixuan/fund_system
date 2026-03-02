@@ -46,6 +46,38 @@ services:
       timeout: 10s
       retries: 5
 
+  fund-collect:
+    image: fund-collect:latest
+    container_name: fund-collect
+    ports:
+      - "15000:5000"
+    environment:
+      - TZ=Asia/Shanghai
+      - COLLECTOR_PORT=5000
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=fund_system
+      - DB_USER=fund
+      - DB_PASSWORD=fund123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - fund_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   java-backend:
     build:
       context: ../fund-service
@@ -62,7 +94,7 @@ services:
       - DB_PASSWORD=fund123
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - COLLECTOR_URL=http://host.docker.internal:5001
+      - COLLECTOR_URL=http://fund-collect:5000
       - TZ=Asia/Shanghai
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -70,6 +102,8 @@ services:
       mysql:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      fund-collect:
         condition: service_healthy
     networks:
       - fund_net
