@@ -11,6 +11,12 @@ import com.fund.entity.PortfolioTrade;
 import com.fund.mapper.FundInfoMapper;
 import com.fund.mapper.FundMetricsMapper;
 import com.fund.mapper.FundNavMapper;
+import com.fund.dto.HoldingWithEstimateVO;
+import com.fund.dto.PortfolioSummary;
+import com.fund.dto.PortfolioSummaryVO;
+import com.fund.entity.watchlist.FundEstimateIntraday;
+import com.fund.mapper.watchlist.FundEstimateIntradayMapper;
+import com.fund.service.watchlist.TradingCalendarService;
 import com.fund.mapper.PortfolioTradeMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -30,15 +37,22 @@ public class PortfolioService {
     private final FundInfoMapper fundInfoMapper;
     private final FundNavMapper fundNavMapper;
     private final FundMetricsMapper fundMetricsMapper;
+    private final FundEstimateIntradayMapper estimateMapper;
+    private final TradingCalendarService calendarService;
+
     
     public PortfolioService(PortfolioTradeMapper tradeMapper,
                           FundInfoMapper fundInfoMapper,
                           FundNavMapper fundNavMapper,
-                          FundMetricsMapper fundMetricsMapper) {
+                          FundMetricsMapper fundMetricsMapper,
+                          FundEstimateIntradayMapper estimateMapper,
+                          TradingCalendarService calendarService) {
         this.tradeMapper = tradeMapper;
         this.fundInfoMapper = fundInfoMapper;
         this.fundNavMapper = fundNavMapper;
         this.fundMetricsMapper = fundMetricsMapper;
+        this.estimateMapper = estimateMapper;
+        this.calendarService = calendarService;
     }
     
     /**
@@ -215,6 +229,110 @@ public class PortfolioService {
         return analysis;
     }
     
+        /**
+     * 获取持仓带实时估值
+     */
+    public PortfolioSummaryVO getHoldingsWithEstimate() {
+        PortfolioSummaryVO result = new PortfolioSummaryVO();
+        
+        // 1. 获取基础持仓
+        List<HoldingVO> baseHoldings = getHoldings();
+        if (baseHoldings.isEmpty()) {
+            result.setHoldings(Collections.emptyList());
+            PortfolioSummary emptySummary = new PortfolioSummary();
+            emptySummary.setTotalCost(BigDecimal.ZERO);
+            emptySummary.setTotalMarketValue(BigDecimal.ZERO);
+            emptySummary.setTotalDailyReturn(BigDecimal.ZERO);
+            emptySummary.setTotalReturn(BigDecimal.ZERO);
+            emptySummary.setTotalReturnPct(BigDecimal.ZERO);
+            result.setSummary(emptySummary);
+            result.setIsTradingTime(calendarService.isTradingTime());
+            return result;
+        }
+        
+        // 2. 获取当前交易日
+        LocalDate tradeDate = calendarService.getCurrentTradeDate();
+        boolean isTradingTime = calendarService.isTradingTime();
+        
+        // 3. 组装带估值的持仓列表
+        List<HoldingWithEstimateVO> holdingsWithEstimate = new ArrayList<>();
+        BigDecimal totalCost = BigDecimal.ZERO;
+        BigDecimal totalMarketValue = BigDecimal.ZERO;
+        BigDecimal totalDailyReturn = BigDecimal.ZERO;
+        
+        for (HoldingVO holding : baseHoldings) {
+            // 获取实时估值
+            FundEstimateIntraday estimate = estimateMapper.selectLatest(holding.getFundCode());
+            
+            BigDecimal estimateNav;
+            BigDecimal estimateChangePct;
+            LocalDateTime lastUpdateTime;
+            
+            if (estimate != null && estimate.getTradeDate().equals(tradeDate)) {
+                estimateNav = estimate.getEstimateNav();
+                estimateChangePct = estimate.getEstimateChangePct();
+                lastUpdateTime = estimate.getEstimateTime();
+            } else {
+                estimateNav = holding.getCurrentNav();
+                estimateChangePct = BigDecimal.ZERO;
+                lastUpdateTime = null;
+            }
+            
+            // 计算市值和收益
+            BigDecimal estimateMarketValue = estimateNav.multiply(holding.getTotalShares());
+            BigDecimal estimateDailyReturn = estimateChangePct
+                    .multiply(holding.getTotalShares())
+                    .multiply(estimateNav)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            
+            BigDecimal totalReturn = estimateMarketValue.subtract(holding.getTotalCost());
+            BigDecimal totalReturnPct = holding.getTotalCost().compareTo(BigDecimal.ZERO) > 0
+                    ? totalReturn.divide(holding.getTotalCost(), 4, RoundingMode.HALF_UP)
+                            .multiply(new BigDecimal("100"))
+                    : BigDecimal.ZERO;
+            
+            HoldingWithEstimateVO vo = new HoldingWithEstimateVO();
+            vo.setFundCode(holding.getFundCode());
+            vo.setFundName(holding.getFundName());
+            vo.setHoldShares(holding.getTotalShares());
+            vo.setAvgCost(holding.getAvgCost());
+            vo.setTotalCost(holding.getTotalCost());
+            vo.setEstimateNav(estimateNav);
+            vo.setEstimateChangePct(estimateChangePct);
+            vo.setEstimateMarketValue(estimateMarketValue);
+            vo.setEstimateDailyReturn(estimateDailyReturn);
+            vo.setTotalReturn(totalReturn);
+            vo.setTotalReturnPct(totalReturnPct);
+            vo.setLastUpdateTime(lastUpdateTime);
+            
+            holdingsWithEstimate.add(vo);
+            
+            totalCost = totalCost.add(holding.getTotalCost());
+            totalMarketValue = totalMarketValue.add(estimateMarketValue);
+            totalDailyReturn = totalDailyReturn.add(estimateDailyReturn);
+        }
+        
+        // 4. 计算汇总
+        BigDecimal sumTotalReturn = totalMarketValue.subtract(totalCost);
+        BigDecimal sumTotalReturnPct = totalCost.compareTo(BigDecimal.ZERO) > 0
+                ? sumTotalReturn.divide(totalCost, 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100"))
+                : BigDecimal.ZERO;
+        
+        PortfolioSummary summary = new PortfolioSummary();
+        summary.setTotalCost(totalCost);
+        summary.setTotalMarketValue(totalMarketValue);
+        summary.setTotalDailyReturn(totalDailyReturn);
+        summary.setTotalReturn(sumTotalReturn);
+        summary.setTotalReturnPct(sumTotalReturnPct);
+        
+        result.setHoldings(holdingsWithEstimate);
+        result.setSummary(summary);
+        result.setIsTradingTime(isTradingTime);
+        
+        return result;
+    }
+
     /**
      * 更新持仓（修改份额或成本价）
      */

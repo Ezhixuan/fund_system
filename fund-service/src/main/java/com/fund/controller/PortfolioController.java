@@ -4,6 +4,7 @@ import com.fund.dto.ApiResponse;
 import com.fund.dto.HoldingUpdateRequest;
 import com.fund.dto.HoldingVO;
 import com.fund.dto.PortfolioAnalysis;
+import com.fund.dto.PortfolioSummaryVO;
 import com.fund.dto.TradeRequest;
 import com.fund.service.PortfolioService;
 import org.springframework.web.bind.annotation.*;
@@ -78,5 +79,12 @@ public class PortfolioController {
     @GetMapping("/analysis")
     public ApiResponse<PortfolioAnalysis> analyze() {
         return ApiResponse.success(portfolioService.analyze());
+    }
+    /**
+     * 获取持仓带实时估值
+     */
+    @GetMapping("/holdings-with-estimate")
+    public ApiResponse<PortfolioSummaryVO> getHoldingsWithEstimate() {
+        return ApiResponse.success(portfolioService.getHoldingsWithEstimate());
     }
 }
