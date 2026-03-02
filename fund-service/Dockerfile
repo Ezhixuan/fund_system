@@ -7,7 +7,7 @@ WORKDIR /app
 COPY target/*.jar app.jar
 
 # 安装 curl 用于健康检查
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl tzdata
 
 # JVM 参数
 ENV JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseG1GC"
