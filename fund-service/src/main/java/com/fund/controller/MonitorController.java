@@ -39,7 +39,7 @@ public class MonitorController {
     }
 
     /**
-     * 直接查询Python原始数据 - 使用实际存在的接口
+     * 直接查询Python原始数据 - 支持所有类型
      */
     @GetMapping("/raw/python/{fundCode}")
     public ApiResponse<Map<String, Object>> getPythonRawData(
@@ -52,37 +52,60 @@ public class MonitorController {
             String url;
             Map<String, Object> result;
             
-            if ("estimate".equals(type)) {
-                // 实时估值接口 - POST
-                url = "http://fund-collect:5000/api/collect/estimate";
-                Map<String, String> body = new HashMap<>();
-                body.put("fundCode", fundCode);
-                
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-                HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
-                
-                result = restTemplate.postForObject(url, request, Map.class);
-            } else if ("batch".equals(type)) {
-                // 批量接口 - POST
-                url = "http://fund-collect:5000/api/collect/batch";
-                Map<String, List<String>> body = new HashMap<>();
-                body.put("fundCodes", List.of(fundCode));
-                
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-                HttpEntity<Map<String, List<String>>> request = new HttpEntity<>(body, headers);
-                
-                result = restTemplate.postForObject(url, request, Map.class);
-            } else {
-                // 其他类型使用健康检查接口返回服务状态
-                url = "http://fund-collect:5000/health";
-                Map<String, Object> health = restTemplate.getForObject(url, Map.class);
-                
-                result = new HashMap<>();
-                result.put("success", true);
-                result.put("service", health);
-                result.put("note", "该类型接口正在开发中，当前仅支持 estimate 类型");
+            switch (type) {
+                case "estimate":
+                    // 实时估值接口 - POST
+                    url = "http://fund-collect:5000/api/collect/estimate";
+                    Map<String, String> estimateBody = new HashMap<>();
+                    estimateBody.put("fundCode", fundCode);
+                    
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+                    HttpEntity<Map<String, String>> request = new HttpEntity<>(estimateBody, headers);
+                    
+                    result = restTemplate.postForObject(url, request, Map.class);
+                    break;
+                    
+                case "info":
+                    // 基金基本信息 - GET (新接口)
+                    url = "http://fund-collect:5000/api/collect/fund/" + fundCode;
+                    result = restTemplate.getForObject(url, Map.class);
+                    break;
+                    
+                case "metrics":
+                    // 基金指标 - GET (新接口)
+                    url = "http://fund-collect:5000/api/collect/metrics/" + fundCode;
+                    result = restTemplate.getForObject(url, Map.class);
+                    break;
+                    
+                case "nav":
+                    // NAV历史 - GET (新接口)
+                    url = "http://fund-collect:5000/api/collect/nav/" + fundCode;
+                    result = restTemplate.getForObject(url, Map.class);
+                    break;
+                    
+                case "batch":
+                    // 批量接口 - POST
+                    url = "http://fund-collect:5000/api/collect/batch";
+                    Map<String, List<String>> batchBody = new HashMap<>();
+                    batchBody.put("fundCodes", List.of(fundCode));
+                    
+                    HttpHeaders batchHeaders = new HttpHeaders();
+                    batchHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    HttpEntity<Map<String, List<String>>> batchRequest = new HttpEntity<>(batchBody, batchHeaders);
+                    
+                    result = restTemplate.postForObject(url, batchRequest, Map.class);
+                    break;
+                    
+                default:
+                    // 默认使用健康检查
+                    url = "http://fund-collect:5000/health";
+                    Map<String, Object> health = restTemplate.getForObject(url, Map.class);
+                    
+                    result = new HashMap<>();
+                    result.put("success", true);
+                    result.put("service", health);
+                    result.put("note", "未知类型: " + type + "，支持: estimate, info, metrics, nav, batch");
             }
             
             return ApiResponse.success(result);
