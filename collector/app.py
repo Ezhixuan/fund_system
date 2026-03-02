@@ -137,6 +137,49 @@ def get_collector_status():
         }
     })
 
+
+
+@app.route('/api/collect/fund', methods=['POST'])
+def collect_fund_data():
+    """
+    采集基金完整数据（基础信息 + 净值历史 + 指标）
+    Request: { "fundCode": "005827" }
+    """
+    try:
+        data = request.get_json()
+        if not data or 'fundCode' not in data:
+            return jsonify({'success': False, 'error': '缺少fundCode参数'}), 400
+        
+        fund_code = data['fundCode']
+        logger.info(f"开始采集基金完整数据: {fund_code}")
+        
+        # 导入采集函数
+        from services.fund_data_service import FundDataService
+        
+        service = FundDataService()
+        result = service.collect_fund_complete(fund_code)
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'fundCode': fund_code,
+                    'fundName': result.get('fund_name', ''),
+                    'navCount': result.get('nav_count', 0),
+                    'metricsCalculated': result.get('metrics_calculated', False),
+                    'message': '基金数据采集完成'
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', '采集失败')
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"采集基金数据失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 def init_scheduler():
     """初始化定时任务调度器"""
     try:

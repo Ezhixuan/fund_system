@@ -6,10 +6,13 @@ import com.fund.dto.ApiResponse;
 import com.fund.dto.FundInfoVO;
 import com.fund.dto.FundMetricsVO;
 import com.fund.dto.FundNavVO;
+import com.fund.service.CollectClient;
 import com.fund.service.FundService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,11 +26,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/funds")
 public class FundController {
+    private static final Logger log = LoggerFactory.getLogger(FundController.class);
     
     private final FundService fundService;
+    private final CollectClient collectClient;
     
-    public FundController(FundService fundService) {
+    public FundController(FundService fundService, CollectClient collectClient) {
         this.fundService = fundService;
+        this.collectClient = collectClient;
     }
     
     /**
@@ -45,15 +51,25 @@ public class FundController {
     }
     
     /**
-     * 获取基金详情
+     * 获取基金详情（自动触发采集）
      */
-    @Operation(summary = "获取基金详情", description = "根据基金代码获取详细信息")
+    @Operation(summary = "获取基金详情", description = "根据基金代码获取详细信息，如不存在则自动触发采集")
     @GetMapping("/{fundCode}")
     public ApiResponse<FundInfoVO> getFundDetail(
             @Parameter(description = "基金代码", example = "000001") @PathVariable String fundCode) {
         FundInfoVO detail = fundService.getFundDetail(fundCode);
         if (detail == null) {
-            return ApiResponse.notFound("基金不存在");
+            // 自动触发采集
+            log.info("基金 {} 不存在，触发自动采集", fundCode);
+            boolean collected = collectClient.collectFundData(fundCode);
+            if (collected) {
+                // 重新查询
+                detail = fundService.getFundDetail(fundCode);
+                if (detail != null) {
+                    return ApiResponse.success(detail);
+                }
+            }
+            return ApiResponse.notFound("基金不存在，自动采集失败");
         }
         return ApiResponse.success(detail);
     }
