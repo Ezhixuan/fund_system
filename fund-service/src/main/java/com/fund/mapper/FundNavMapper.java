@@ -18,7 +18,7 @@ public interface FundNavMapper extends BaseMapper<FundNav> {
     /**
      * 查询基金历史净值（优化：只查询必要字段）
      */
-    @Select("SELECT fund_code, nav_date, unit_nav, accum_nav, daily_change " +
+    @Select("SELECT fund_code, nav_date, unit_nav, accum_nav, daily_return " +
             "FROM fund_nav WHERE fund_code = #{fundCode} " +
             "AND nav_date BETWEEN #{startDate} AND #{endDate} " +
             "ORDER BY nav_date DESC")
@@ -29,7 +29,7 @@ public interface FundNavMapper extends BaseMapper<FundNav> {
     /**
      * 查询最新净值（优化：只查询必要字段）
      */
-    @Select("SELECT fund_code, nav_date, unit_nav, accum_nav, daily_change " +
+    @Select("SELECT fund_code, nav_date, unit_nav, accum_nav, daily_return " +
             "FROM fund_nav WHERE fund_code = #{fundCode} " +
             "ORDER BY nav_date DESC LIMIT 1")
     FundNav selectLatestNav(String fundCode);
@@ -37,7 +37,7 @@ public interface FundNavMapper extends BaseMapper<FundNav> {
     /**
      * 查询前一交易日净值（优化：只查询必要字段）
      */
-    @Select("SELECT fund_code, nav_date, unit_nav, accum_nav, daily_change " +
+    @Select("SELECT fund_code, nav_date, unit_nav, accum_nav, daily_return " +
             "FROM fund_nav WHERE fund_code = #{fundCode} " +
             "AND nav_date < #{currentDate} " +
             "ORDER BY nav_date DESC LIMIT 1")
