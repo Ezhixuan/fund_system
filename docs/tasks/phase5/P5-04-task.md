@@ -96,11 +96,11 @@
 
 ## API清单
 
-```
+\`\`\`
 GET  /api/fund/{code}/intraday          # 获取分时数据
 POST /api/fund/{code}/estimate/refresh  # 手动刷新
 GET  /api/fund/{code}/estimate/latest   # 获取最新估值
-```
+\`\`\`
 
 ---
 
@@ -112,13 +112,25 @@ GET  /api/fund/{code}/estimate/latest   # 获取最新估值
 
 ---
 
-## 测试计划
+## 测试报告
 
-待测试:
-- 分时图数据加载
-- WebSocket实时更新
-- 手动刷新功能
-- 冷却机制
+测试日志: ~/.openclaw/workspace/docs/test-log-P5-04.md
+
+### 测试结果
+| 测试项 | 状态 |
+|--------|------|
+| 分时图数据加载 API | ✅ 通过 |
+| 手动刷新功能 | ✅ 通过 |
+| 交易时间检查 | ✅ 通过 |
+| WebSocket 连接 | ✅ 通过 |
+| 代码审查 | ✅ 通过 |
+
+### 总体状态
+**✅ 测试通过** - 所有核心功能正常工作
+
+### 待补充测试
+- 冷却机制（需在交易时间 9:30-15:00 测试）
+- WebSocket 实时推送（需配合采集服务）
 
 ---
 
