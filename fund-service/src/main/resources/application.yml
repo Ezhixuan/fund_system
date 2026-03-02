@@ -90,6 +90,15 @@ mybatis-plus:
       logic-delete-value: 1
       logic-not-delete-value: 0
 
+# 采集服务配置
+collect:
+  poll:
+    interval: 500        # 轮询间隔（毫秒）
+    max-attempts: 30     # 最大轮询次数
+    timeout-seconds: 15  # 总超时时间（秒）
+  cache:
+    empty-ttl-minutes: 30  # 空值缓存时间（分钟）
+
 logging:
   level:
     com.fund: debug
