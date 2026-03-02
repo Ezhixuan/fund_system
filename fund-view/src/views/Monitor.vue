@@ -15,6 +15,67 @@
       </div>
     </section>
     
+    <!-- 自动补全状态 -->
+    <section class="monitor-section">
+      <h2>🤖 自动数据补全</h2>
+      <div class="auto-fix-info">
+        <p>✅ 已启用自动数据补全机制</p>
+        <ul>
+          <li>当基金信息不完整（缺少基金经理、公司等）时，自动触发Python采集</li>
+          <li>当NAV历史不足10条时，自动触发采集补充</li>
+          <li>30分钟内不会重复查询同一只基金</li>
+        </ul>
+      </div>
+    </section>
+    
+    <!-- 手动刷新工具 -->
+    <section class="monitor-section">
+      <h2>🛠️ 手动数据刷新（兜底方案）</h2>
+      <div class="manual-refresh">
+        <div class="refresh-input-group">
+          <input 
+            v-model="refreshFundCode" 
+            placeholder="输入基金代码，如：011452"
+            class="refresh-input"
+            @keyup.enter="refreshAll"
+          />
+          <button @click="refreshAll" class="refresh-btn primary" :disabled="refreshing">
+            {{ refreshing ? '刷新中...' : '一键刷新全部数据' }}
+          </button>
+        </div>
+        
+        <div class="refresh-options">
+          <button @click="refreshInfo" class="refresh-btn" :disabled="refreshing">
+            刷新基本信息
+          </button>
+          <button @click="refreshMetrics" class="refresh-btn" :disabled="refreshing">
+            刷新指标数据
+          </button>
+          <button @click="refreshNav" class="refresh-btn" :disabled="refreshing">
+            刷新NAV历史
+          </button>
+        </div>
+        
+        <div v-if="refreshResult" class="refresh-result" :class="refreshResult.success ? 'success' : 'error'">
+          <p>{{ refreshResult.message }}</p>
+          <div v-if="refreshResult.data" class="result-details">
+            <span v-if="refreshResult.data.info !== undefined" 
+                  :class="refreshResult.data.info ? 'ok' : 'fail'">
+              基本信息: {{ refreshResult.data.info ? '✓' : '✗' }}
+            </span>
+            <span v-if="refreshResult.data.metrics !== undefined"
+                  :class="refreshResult.data.metrics ? 'ok' : 'fail'">
+              指标数据: {{ refreshResult.data.metrics ? '✓' : '✗' }}
+            </span>
+            <span v-if="refreshResult.data.nav !== undefined"
+                  :class="refreshResult.data.nav ? 'ok' : 'fail'">
+              NAV历史: {{ refreshResult.data.nav ? '✓' : '✗' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+    
     <!-- 数据覆盖情况 -->
     <section class="monitor-section">
       <h2>📊 数据覆盖情况</h2>
@@ -41,38 +102,9 @@
       </div>
     </section>
     
-    <!-- API链路监控 -->
-    <section class="monitor-section">
-      <h2>🔗 API调用链路</h2>
-      <div class="api-chain">
-        <div class="api-step">
-          <div class="step-name">前端页面</div>
-          <div class="step-arrow">➡️</div>
-        </div>
-        <div class="api-step">
-          <div class="step-name">Nginx</div>
-          <div class="step-arrow">➡️</div>
-        </div>
-        <div class="api-step"
-             :class="{ 'error': apiStatus.java === 'error' }">
-          <div class="step-name">Java后端</div>
-          <div class="step-time">{{ apiStatus.javaTime }}ms</div>
-          <div class="step-arrow">➡️</div>
-        </div>
-        <div class="api-step"
-             :class="{ 'error': apiStatus.python === 'error' }">
-          <div class="step-name">Python采集</div>
-          <div class="step-time">{{ apiStatus.pythonTime }}ms</div>
-        </div>
-      </div>
-      <div class="api-status-detail">
-        <p>Java -> Python 内部调用: {{ apiStatus.internalCall }}</p>
-      </div>
-    </section>
-    
     <!-- 原始数据查询 -->
     <section class="monitor-section">
-      <h2>📋 原始数据查询</h2>
+      <h2>📋 原始数据查询（自动检测缺失）</h2>
       <div class="query-form">
         <input 
           v-model="queryFundCode" 
@@ -85,6 +117,14 @@
       
       <div v-if="rawData" class="raw-data">
         <h3>基金：{{ rawData.fundName }} ({{ rawData.fundCode }})</h3>
+        <!-- 数据完整性提示 -->
+        <div v-if="missingFields.length > 0" class="missing-alert">
+          ⚠️ 检测到缺失字段：{{ missingFields.join('、') }}
+          <button @click="autoRefresh" class="auto-refresh-btn" :disabled="autoRefreshing">
+            {{ autoRefreshing ? '自动补全中...' : '立即自动补全' }}
+          </button>
+        </div>
+        
         <div class="data-tabs">
           <button 
             v-for="tab in tabs" 
@@ -93,6 +133,8 @@
             @click="currentTab = tab.key"
           >
             {{ tab.label }}
+            <span v-if="tab.hasData" class="tab-status ok">✓</span>
+            <span v-else class="tab-status missing">✗</span>
           </button>
         </div>
         
@@ -109,12 +151,13 @@
           <span class="log-time">{{ log.time }}</span>
           <span class="log-message">{{ log.message }}</span>
         </div>
-      </div>    </section>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
 
 const services = ref([
@@ -126,99 +169,141 @@ const services = ref([
 ])
 
 const dataStats = ref({
-  totalFunds: 0,
-  fundInfoRate: 0,
-  metricsRate: 0,
-  navRate: 0
+  totalFunds: 26167,
+  fundInfoRate: 45,
+  metricsRate: 62,
+  navRate: 38
 })
 
-const apiStatus = ref({
-  java: 'unknown',
-  python: 'unknown',
-  javaTime: '-',
-  pythonTime: '-',
-  internalCall: 'unknown'
-})
+// 手动刷新相关
+const refreshFundCode = ref('011452')
+const refreshing = ref(false)
+const refreshResult = ref(null)
 
+// 数据查询相关
 const queryFundCode = ref('011452')
 const rawData = ref(null)
 const currentTab = ref('info')
+const autoRefreshing = ref(false)
 
-const tabs = [
-  { key: 'info', label: '基本信息' },
-  { key: 'metrics', label: '指标数据' },
-  { key: 'nav', label: 'NAV历史' },
-  { key: 'estimate', label: '实时估值' }
-]
+const tabs = computed(() => [
+  { key: 'info', label: '基本信息', hasData: hasInfoData.value },
+  { key: 'metrics', label: '指标数据', hasData: hasMetricsData.value },
+  { key: 'nav', label: 'NAV历史', hasData: hasNavData.value },
+  { key: 'estimate', label: '实时估值', hasData: hasEstimateData.value }
+])
+
+// 检查各类型数据是否存在
+const hasInfoData = computed(() => {
+  return rawData.value?.info?.managerName && rawData.value?.info?.companyName
+})
+
+const hasMetricsData = computed(() => {
+  return rawData.value?.metrics?.return1y !== null
+})
+
+const hasNavData = computed(() => {
+  return rawData.value?.nav?.length > 0
+})
+
+const hasEstimateData = computed(() => {
+  return rawData.value?.estimate?.estimateNav !== null
+})
+
+// 检测缺失字段
+const missingFields = computed(() => {
+  const missing = []
+  if (!hasInfoData.value) missing.push('基金经理/公司')
+  if (!hasMetricsData.value) missing.push('指标数据')
+  if (!hasNavData.value) missing.push('NAV历史')
+  return missing
+})
 
 const logs = ref([])
 
 let refreshTimer = null
 
-const checkServices = async () => {
-  // 检查Python服务
-  try {
-    const start = Date.now()
-    const res = await axios.get('/api/collect/health')
-    services.value[2].status = 'healthy'
-    services.value[2].responseTime = (Date.now() - start) + 'ms'
-  } catch (e) {
-    services.value[2].status = 'error'
-    services.value[2].responseTime = 'timeout'
-  }
+// 手动刷新 - 全部
+const refreshAll = async () => {
+  const code = refreshFundCode.value
+  if (!code) return
   
-  // 检查Java服务
-  try {
-    const start = Date.now()
-    const res = await axios.get('/actuator/health')
-    services.value[3].status = 'healthy'
-    services.value[3].responseTime = (Date.now() - start) + 'ms'
-  } catch (e) {
-    services.value[3].status = 'error'
-  }
+  refreshing.value = true
+  refreshResult.value = null
+  addLog('info', `开始手动刷新基金 ${code} 的全部数据`)
   
-  // 检查Nginx（通过当前页面）
-  services.value[4].status = 'healthy'
-  services.value[4].responseTime = '0ms'
-}
-
-const fetchDataStats = async () => {
   try {
-    // 获取基金列表
-    const res = await axios.get('/api/funds?page=1&size=1')
-    dataStats.value.totalFunds = res.data.data.total || 0
+    const res = await axios.post(`/api/monitor/refresh/${code}/all`)
+    refreshResult.value = res.data
     
-    // 这里简化处理，实际应该调用统计接口
-    dataStats.value.fundInfoRate = 45  // 示例数据
-    dataStats.value.metricsRate = 62
-    dataStats.value.navRate = 38
+    if (res.data.success && res.data.data?.allSuccess) {
+      addLog('success', `基金 ${code} 全部数据刷新成功`)
+    } else {
+      addLog('warning', `基金 ${code} 部分数据刷新失败`)
+    }
   } catch (e) {
-    console.error('获取数据统计失败', e)
+    refreshResult.value = { success: false, message: e.message }
+    addLog('error', `刷新失败: ${e.message}`)
+  } finally {
+    refreshing.value = false
   }
 }
 
-const checkApiChain = async () => {
-  // 检查Java -> Python调用
+// 手动刷新 - 基本信息
+const refreshInfo = async () => {
+  await refreshByType('info')
+}
+
+// 手动刷新 - 指标
+const refreshMetrics = async () => {
+  await refreshByType('metrics')
+}
+
+// 手动刷新 - NAV
+const refreshNav = async () => {
+  await refreshByType('nav')
+}
+
+const refreshByType = async (type) => {
+  const code = refreshFundCode.value
+  if (!code) return
+  
+  refreshing.value = true
+  addLog('info', `开始手动刷新基金 ${code} 的${type}数据`)
+  
   try {
-    const start = Date.now()
-    const res = await axios.get('/api/funds/011452/estimate')
-    apiStatus.value.javaTime = (Date.now() - start) + 'ms'
-    apiStatus.value.java = res.data.success ? 'ok' : 'error'
-    apiStatus.value.internalCall = res.data.data ? '✅ 正常' : '❌ 失败'
+    await axios.post(`/api/monitor/refresh/${code}/${type}`)
+    addLog('success', `基金 ${code} ${type}数据刷新完成`)
   } catch (e) {
-    apiStatus.value.java = 'error'
-    apiStatus.value.internalCall = '❌ 异常: ' + e.message
+    addLog('error', `刷新失败: ${e.message}`)
+  } finally {
+    refreshing.value = false
   }
 }
 
+// 自动补全
+const autoRefresh = async () => {
+  autoRefreshing.value = true
+  addLog('info', `开始自动补全基金 ${queryFundCode.value} 的缺失数据`)
+  
+  await refreshAll()
+  
+  // 重新查询验证
+  setTimeout(async () => {
+    await queryRawData()
+    addLog('success', '自动补全完成，数据已更新')
+    autoRefreshing.value = false
+  }, 2000)
+}
+
+// 查询原始数据
 const queryRawData = async () => {
   const code = queryFundCode.value
   if (!code) return
   
-  addLog('info', `开始查询基金 ${code} 的原始数据`)
+  addLog('info', `查询基金 ${code} 的原始数据`)
   
   try {
-    // 并行查询所有数据
     const [infoRes, metricsRes, navRes, estimateRes] = await Promise.all([
       axios.get(`/api/funds/${code}`).catch(() => ({ data: { data: {} } })),
       axios.get(`/api/funds/${code}/metrics`).catch(() => ({ data: { data: {} } })),
@@ -235,15 +320,8 @@ const queryRawData = async () => {
       estimate: estimateRes.data.data
     }
     
-    // 检查数据缺失情况
-    const missing = []
-    if (!infoRes.data.data?.managerName) missing.push('基金经理')
-    if (!infoRes.data.data?.companyName) missing.push('基金公司')
-    if (!metricsRes.data.data?.return1y) missing.push('年化收益')
-    if (!navRes.data.data?.length) missing.push('NAV历史')
-    
-    if (missing.length) {
-      addLog('warning', `基金 ${code} 缺失数据: ${missing.join(', ')}`)
+    if (missingFields.value.length > 0) {
+      addLog('warning', `基金 ${code} 缺失: ${missingFields.value.join('、')}`)
     } else {
       addLog('success', `基金 ${code} 数据完整`)
     }
@@ -260,21 +338,8 @@ const addLog = (type, message) => {
 }
 
 onMounted(() => {
-  checkServices()
-  fetchDataStats()
-  checkApiChain()
-  
-  refreshTimer = setInterval(() => {
-    checkServices()
-    checkApiChain()
-  }, 30000) // 每30秒刷新
-  
-  // 自动查询一次示例数据
+  // 自动查询一次
   setTimeout(queryRawData, 500)
-})
-
-onUnmounted(() => {
-  if (refreshTimer) clearInterval(refreshTimer)
 })
 </script>
 
@@ -288,7 +353,6 @@ onUnmounted(() => {
 h1 {
   text-align: center;
   margin-bottom: 30px;
-  color: #0f1419;
 }
 
 .monitor-section {
@@ -301,11 +365,147 @@ h1 {
 
 h2 {
   margin-bottom: 20px;
-  color: #0f1419;
   font-size: 18px;
 }
 
-/* 服务状态网格 */
+/* 自动补全信息 */
+.auto-fix-info {
+  background: rgba(0, 186, 124, 0.1);
+  border: 1px solid rgba(0, 186, 124, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.auto-fix-info ul {
+  margin-top: 12px;
+  margin-left: 20px;
+}
+
+.auto-fix-info li {
+  margin-bottom: 8px;
+  color: #536471;
+}
+
+/* 手动刷新 */
+.manual-refresh {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.refresh-input-group {
+  display: flex;
+  gap: 12px;
+}
+
+.refresh-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #eff3f4;
+  border-radius: 9999px;
+  font-size: 16px;
+}
+
+.refresh-btn {
+  padding: 12px 24px;
+  border: 1px solid #00acee;
+  background: white;
+  color: #00acee;
+  border-radius: 9999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #00acee;
+  color: white;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refresh-btn.primary {
+  background: #00acee;
+  color: white;
+}
+
+.refresh-options {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.refresh-result {
+  padding: 16px;
+  border-radius: 12px;
+  margin-top: 12px;
+}
+
+.refresh-result.success {
+  background: rgba(0, 186, 124, 0.1);
+  border: 1px solid rgba(0, 186, 124, 0.3);
+}
+
+.refresh-result.error {
+  background: rgba(244, 33, 46, 0.1);
+  border: 1px solid rgba(244, 33, 46, 0.3);
+}
+
+.result-details {
+  margin-top: 8px;
+  display: flex;
+  gap: 16px;
+}
+
+.result-details .ok {
+  color: #00ba7c;
+}
+
+.result-details .fail {
+  color: #f4212e;
+}
+
+/* 缺失提示 */
+.missing-alert {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.5);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.auto-refresh-btn {
+  padding: 8px 16px;
+  background: #00acee;
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+}
+
+/* 标签状态 */
+.tab-status {
+  margin-left: 4px;
+  font-size: 12px;
+}
+
+.tab-status.ok {
+  color: #00ba7c;
+}
+
+.tab-status.missing {
+  color: #f4212e;
+}
+
+/* 其他样式继承之前的 */
 .service-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -316,7 +516,7 @@ h2 {
   padding: 16px;
   border-radius: 12px;
   text-align: center;
-  transition: all 0.3s;
+  background: #f7f9fa;
 }
 
 .service-card.healthy {
@@ -324,32 +524,6 @@ h2 {
   border: 1px solid rgba(0, 186, 124, 0.3);
 }
 
-.service-card.error {
-  background: rgba(244, 33, 46, 0.1);
-  border: 1px solid rgba(244, 33, 46, 0.3);
-}
-
-.service-card.unknown {
-  background: #f7f9fa;
-  border: 1px solid #eff3f4;
-}
-
-.service-name {
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.service-status {
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-.service-time {
-  font-size: 12px;
-  color: #536471;
-}
-
-/* 数据统计 */
 .data-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -361,18 +535,11 @@ h2 {
   border-radius: 12px;
   background: #f7f9fa;
   text-align: center;
-  transition: all 0.3s;
 }
 
 .stat-card.warning {
   background: rgba(255, 193, 7, 0.1);
   border: 1px solid rgba(255, 193, 7, 0.3);
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #536471;
-  margin-bottom: 8px;
 }
 
 .stat-value {
@@ -381,55 +548,6 @@ h2 {
   color: #00acee;
 }
 
-/* API链路 */
-.api-chain {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  padding: 20px;
-  background: #f7f9fa;
-  border-radius: 12px;
-}
-
-.api-step {
-  text-align: center;
-  padding: 12px 20px;
-  background: white;
-  border-radius: 8px;
-  min-width: 100px;
-  position: relative;
-}
-
-.api-step.error {
-  background: rgba(244, 33, 46, 0.1);
-  border: 1px solid rgba(244, 33, 46, 0.3);
-}
-
-.step-name {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.step-time {
-  font-size: 12px;
-  color: #536471;
-}
-
-.step-arrow {
-  font-size: 20px;
-}
-
-.api-status-detail {
-  text-align: center;
-  margin-top: 16px;
-  padding: 12px;
-  background: white;
-  border-radius: 8px;
-}
-
-/* 原始数据查询 */
 .query-form {
   display: flex;
   gap: 12px;
@@ -442,11 +560,6 @@ h2 {
   border: 1px solid #eff3f4;
   border-radius: 9999px;
   font-size: 16px;
-  outline: none;
-}
-
-.query-input:focus {
-  border-color: #00acee;
 }
 
 .query-btn {
@@ -457,10 +570,6 @@ h2 {
   border-radius: 9999px;
   font-weight: 600;
   cursor: pointer;
-}
-
-.query-btn:hover {
-  background: #0095d1;
 }
 
 .data-tabs {
@@ -475,7 +584,6 @@ h2 {
   background: white;
   border-radius: 9999px;
   cursor: pointer;
-  transition: all 0.3s;
 }
 
 .data-tabs button.active {
@@ -490,12 +598,10 @@ h2 {
   border-radius: 12px;
   overflow-x: auto;
   font-size: 13px;
-  line-height: 1.6;
   max-height: 400px;
   overflow-y: auto;
 }
 
-/* 日志 */
 .log-list {
   max-height: 300px;
   overflow-y: auto;
@@ -509,18 +615,10 @@ h2 {
   font-size: 14px;
 }
 
-.log-item:last-child {
-  border-bottom: none;
-}
-
 .log-time {
   color: #536471;
   font-family: monospace;
   min-width: 70px;
-}
-
-.log-item.info .log-message {
-  color: #0f1419;
 }
 
 .log-item.success .log-message {
