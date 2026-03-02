@@ -92,7 +92,7 @@ mybatis-plus:
 
 # 采集服务配置
 collector:
-  url: http://localhost:5001
+  url: ${COLLECTOR_URL:http://localhost:5001}
 
 collect:
   poll:

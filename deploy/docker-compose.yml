@@ -62,6 +62,7 @@ services:
       - DB_PASSWORD=fund123
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - COLLECTOR_URL=http://host.docker.internal:5001
       - TZ=Asia/Shanghai
     volumes:
       - /etc/localtime:/etc/localtime:ro
