@@ -180,6 +180,114 @@ def collect_fund_data():
         logger.error(f"采集基金数据失败: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+
+
+# ============ 新增：基金详情页数据查询接口 ============
+
+@app.route('/api/collect/fund/<string:fund_code>', methods=['GET'])
+def get_fund_info(fund_code):
+    """查询基金基本信息"""
+    try:
+        logger.info(f"查询基金基本信息: {fund_code}")
+        
+        from services.fund_data_service import FundDataService
+        service = FundDataService()
+        fund_info = service.get_fund_info(fund_code)
+        
+        if fund_info:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'fundCode': fund_code,
+                    'fundName': fund_info.get('fund_name', ''),
+                    'fundType': fund_info.get('fund_type', ''),
+                    'managerName': fund_info.get('manager_name', ''),
+                    'companyName': fund_info.get('company_name', ''),
+                    'riskLevel': fund_info.get('risk_level'),
+                    'establishDate': fund_info.get('establish_date'),
+                    'benchmark': fund_info.get('benchmark'),
+                    'dataSource': 'database'
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'errorCode': 'FUND_NOT_FOUND',
+                'message': f'基金 {fund_code} 未找到'
+            }), 404
+            
+    except Exception as e:
+        logger.error(f"查询基金信息失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/collect/metrics/<string:fund_code>', methods=['GET'])
+def get_fund_metrics(fund_code):
+    """查询基金指标数据"""
+    try:
+        logger.info(f"查询基金指标: {fund_code}")
+        
+        from services.fund_data_service import FundDataService
+        service = FundDataService()
+        metrics = service.get_fund_metrics(fund_code)
+        
+        if metrics:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'fundCode': fund_code,
+                    'calcDate': metrics.get('calc_date'),
+                    'return1m': metrics.get('return_1m'),
+                    'return3m': metrics.get('return_3m'),
+                    'return1y': metrics.get('return_1y'),
+                    'sharpeRatio1y': metrics.get('sharpe_ratio_1y'),
+                    'maxDrawdown1y': metrics.get('max_drawdown_1y'),
+                    'volatility1y': metrics.get('volatility_1y'),
+                    'qualityLevel': metrics.get('quality_level'),
+                    'dataSource': 'database'
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'errorCode': 'METRICS_NOT_FOUND',
+                'message': f'基金 {fund_code} 指标数据未找到'
+            }), 404
+            
+    except Exception as e:
+        logger.error(f"查询基金指标失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/collect/nav/<string:fund_code>', methods=['GET'])
+def get_fund_nav_history(fund_code):
+    """查询基金NAV历史"""
+    try:
+        logger.info(f"查询基金NAV历史: {fund_code}")
+        
+        from services.fund_data_service import FundDataService
+        service = FundDataService()
+        nav_list = service.get_nav_history(fund_code, limit=30)
+        
+        if nav_list:
+            return jsonify({
+                'success': True,
+                'data': nav_list,
+                'count': len(nav_list)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'errorCode': 'NAV_NOT_FOUND',
+                'message': f'基金 {fund_code} NAV历史未找到'
+            }), 404
+            
+    except Exception as e:
+        logger.error(f"查询NAV历史失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 def init_scheduler():
     """初始化定时任务调度器"""
     try:

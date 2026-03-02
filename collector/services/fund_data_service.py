@@ -269,6 +269,53 @@ class FundDataService:
             logger.error(f"计算指标失败: {e}")
             return {'success': False, 'error': str(e)}
             
+    def get_fund_info(self, fund_code):
+        """从数据库查询基金基本信息"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
+            sql = """SELECT fund_code, fund_name, fund_type, manager_name, company_name,
+                       risk_level, establish_date, benchmark
+                FROM fund_info WHERE fund_code = %s"""
+            cursor.execute(sql, (fund_code,))
+            result = cursor.fetchone()
+            cursor.close()
+            return result
+        except Exception as e:
+            logger.error(f"查询基金信息失败: {e}")
+            return None
+
+    def get_fund_metrics(self, fund_code):
+        """从数据库查询基金指标"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
+            sql = """SELECT fund_code, calc_date, return_1m, return_3m, return_1y,
+                       sharpe_ratio_1y, max_drawdown_1y, volatility_1y, quality_level
+                FROM fund_metrics WHERE fund_code = %s ORDER BY calc_date DESC LIMIT 1"""
+            cursor.execute(sql, (fund_code,))
+            result = cursor.fetchone()
+            cursor.close()
+            return result
+        except Exception as e:
+            logger.error(f"查询基金指标失败: {e}")
+            return None
+
+    def get_nav_history(self, fund_code, limit=30):
+        """从数据库查询NAV历史"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
+            sql = """SELECT nav_date, unit_nav, accum_nav, daily_return
+                FROM fund_nav WHERE fund_code = %s ORDER BY nav_date DESC LIMIT %s"""
+            cursor.execute(sql, (fund_code, limit))
+            results = cursor.fetchall()
+            cursor.close()
+            return results
+        except Exception as e:
+            logger.error(f"查询NAV历史失败: {e}")
+            return []
+
     def collect_fund_complete(self, fund_code):
         """完整采集基金数据"""
         logger.info(f"=" * 60)
