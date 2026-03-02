@@ -2,6 +2,7 @@ package com.fund.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.fund.entity.FundNav;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -14,7 +15,7 @@ import java.util.List;
  */
 @Mapper
 public interface FundNavMapper extends BaseMapper<FundNav> {
-    
+
     /**
      * 查询基金历史净值（优化：只查询必要字段）
      */
@@ -25,7 +26,7 @@ public interface FundNavMapper extends BaseMapper<FundNav> {
     List<FundNav> selectByDateRange(@Param("fundCode") String fundCode,
                                        @Param("startDate") LocalDate startDate,
                                        @Param("endDate") LocalDate endDate);
-    
+
     /**
      * 查询最新净值（优化：只查询必要字段）
      */
@@ -33,7 +34,7 @@ public interface FundNavMapper extends BaseMapper<FundNav> {
             "FROM fund_nav WHERE fund_code = #{fundCode} " +
             "ORDER BY nav_date DESC LIMIT 1")
     FundNav selectLatestNav(String fundCode);
-    
+
     /**
      * 查询前一交易日净值（优化：只查询必要字段）
      */
@@ -42,4 +43,18 @@ public interface FundNavMapper extends BaseMapper<FundNav> {
             "AND nav_date < #{currentDate} " +
             "ORDER BY nav_date DESC LIMIT 1")
     FundNav selectPreviousNav(@Param("fundCode") String fundCode, @Param("currentDate") LocalDate currentDate);
+
+    /**
+     * 查询基金最近N条净值记录
+     */
+    @Select("SELECT fund_code, nav_date, unit_nav, accum_nav, daily_return " +
+            "FROM fund_nav WHERE fund_code = #{fundCode} " +
+            "ORDER BY nav_date DESC LIMIT #{limit}")
+    List<FundNav> selectRecentByCode(@Param("fundCode") String fundCode, @Param("limit") int limit);
+
+    /**
+     * 删除基金所有净值记录（用于刷新）
+     */
+    @Delete("DELETE FROM fund_nav WHERE fund_code = #{fundCode}")
+    int deleteByFundCode(String fundCode);
 }
