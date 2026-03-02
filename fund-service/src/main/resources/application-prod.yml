@@ -22,6 +22,10 @@ spring:
         max-idle: 16
         min-idle: 8
 
+# Python采集服务配置
+collector:
+  url: ${COLLECTOR_URL:http://host.docker.internal:5002}
+
 logging:
   level:
     com.fund: info
