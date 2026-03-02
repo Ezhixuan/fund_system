@@ -33,8 +33,8 @@ const routes = [
   },
   {
     path: '/monitor',
-    name: 'Monitor',
-    component: () => import('@/views/Monitor.vue'),
+    name: 'MonitorV2',
+    component: () => import('@/views/MonitorV2.vue'),
     meta: {
       title: '系统监控',
       icon: 'monitor'

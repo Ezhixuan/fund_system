@@ -1,7 +1,8 @@
 package com.fund.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fund.entity.ApiCallLog;
-import com.fund.util.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +22,13 @@ import java.util.stream.Collectors;
 public class ApiTraceService {
     
     private static final Logger log = LoggerFactory.getLogger(ApiTraceService.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     
     @Autowired
     private StringRedisTemplate redisTemplate;
     
     private static final String TRACE_KEY_PREFIX = "api:trace:";
-    private static final int MAX_LOGS = 1000; // 保留最近1000条
+    private static final int MAX_LOGS = 1000;
     
     /**
      * 开始记录调用链路
@@ -48,7 +50,6 @@ public class ApiTraceService {
      */
     public void recordPythonSuccess(ApiCallLog trace, int httpStatus, String pythonResponse) {
         trace.setPythonStatus(httpStatus);
-        // 截断过长的响应
         trace.setPythonResponse(pythonResponse.length() > 2000 
             ? pythonResponse.substring(0, 2000) + "..." 
             : pythonResponse);
@@ -67,11 +68,11 @@ public class ApiTraceService {
      */
     public void recordJavaResponse(ApiCallLog trace, Object javaResponse) {
         try {
-            String json = JsonUtil.toJson(javaResponse);
+            String json = objectMapper.writeValueAsString(javaResponse);
             trace.setJavaResponse(json.length() > 500 
                 ? json.substring(0, 500) + "..." 
                 : json);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             trace.setJavaResponse("无法序列化: " + e.getMessage());
         }
     }
@@ -89,10 +90,8 @@ public class ApiTraceService {
             trace.setErrorMessage(errorMsg);
         }
         
-        // 保存到Redis
         saveTrace(trace);
         
-        // 记录日志
         if (success) {
             log.info("[链路] {} {} -> {} 耗时{}ms", 
                 trace.getFundCode(), trace.getApiType(), trace.getStatus(), trace.getDuration());
@@ -108,13 +107,11 @@ public class ApiTraceService {
     private void saveTrace(ApiCallLog trace) {
         try {
             String key = TRACE_KEY_PREFIX + trace.getApiType();
-            String value = JsonUtil.toJson(trace);
+            String value = objectMapper.writeValueAsString(trace);
             
-            // 使用List存储，保留最近MAX_LOGS条
             redisTemplate.opsForList().leftPush(key, value);
             redisTemplate.opsForList().trim(key, 0, MAX_LOGS - 1);
             
-            // 同时保存到总日志
             redisTemplate.opsForList().leftPush(TRACE_KEY_PREFIX + "all", value);
             redisTemplate.opsForList().trim(TRACE_KEY_PREFIX + "all", 0, MAX_LOGS - 1);
             
@@ -135,7 +132,7 @@ public class ApiTraceService {
         return logs.stream()
             .map(json -> {
                 try {
-                    return JsonUtil.fromJson(json, ApiCallLog.class);
+                    return objectMapper.readValue(json, ApiCallLog.class);
                 } catch (Exception e) {
                     return null;
                 }
@@ -188,7 +185,6 @@ public class ApiTraceService {
         private int successRate;
         private Long avgDuration;
         
-        // Getters and Setters
         public int getTotal() { return total; }
         public void setTotal(int total) { this.total = total; }
         
