@@ -91,6 +91,9 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 # 采集服务配置
+collector:
+  url: http://localhost:5001
+
 collect:
   poll:
     interval: 500        # 轮询间隔（毫秒）
