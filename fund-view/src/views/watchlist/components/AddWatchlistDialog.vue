@@ -97,8 +97,8 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { Plus, Search, Close } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { Icon } from '@/components/Icon'
 import FundSearchSelect from '@/components/FundSearchSelect.vue'
 import { addWatchlist, updateWatchlist } from '@/api/watchlist'
 

@@ -5,7 +5,7 @@
       <h1>我的关注</h1>
       <div class="header-actions">
         <el-button type="primary" @click="showAddDialog = true">
-          <Icon icon="plus" /> 添加关注
+          <ElIcon><Plus /></ElIcon> 添加关注
         </el-button>
         <el-button @click="handleImportFromPortfolio">
           从持仓导入
@@ -45,7 +45,7 @@
         @input="handleSearch"
       >
         <template #prefix>
-          <Icon icon="search" />
+          <ElIcon><Search /></ElIcon>
         </template>
       </el-input>
     </div>
@@ -142,7 +142,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Icon } from '@/components/Icon'
 import AddWatchlistDialog from './components/AddWatchlistDialog.vue'
 import { getWatchlist, deleteWatchlist, importFromPortfolio } from '@/api/watchlist'
 
