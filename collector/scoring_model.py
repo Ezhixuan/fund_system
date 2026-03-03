@@ -3,18 +3,18 @@
 基金评分模型
 五维评分体系：收益/风控/稳定/规模/费用
 """
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import pymysql
 from typing import Dict, Optional
 from dataclasses import dataclass
 
-DB_CONFIG = {
-    'host': '127.0.0.1',
-    'port': 3307,
-    'user': 'fund',
-    'password': 'fund123',
-    'database': 'fund_system',
-    'charset': 'utf8mb4'
-}
+from config import settings
+
+# 数据库配置（从统一配置读取）
+DB_CONFIG = settings.get_db_config()
 
 
 @dataclass

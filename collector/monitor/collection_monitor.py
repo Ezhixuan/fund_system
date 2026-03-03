@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from config import settings
 
 
 @dataclass
@@ -48,7 +49,7 @@ class CollectionMonitor:
             db_url: 数据库连接URL，默认从环境变量读取
         """
         if db_url is None:
-            db_url = os.getenv('DB_URL', 'mysql+pymysql://fund:fund123@127.0.0.1:3307/fund_system')
+            db_url = settings.get_db_url()
         
         self.engine = create_engine(db_url, pool_pre_ping=True)
         self.Session = sessionmaker(bind=self.engine)

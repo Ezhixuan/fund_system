@@ -3,8 +3,9 @@
 采集单只基金历史净值并计算指标
 用于测试真实数据效果
 """
+import os
 import sys
-sys.path.insert(0, '/Users/ezhixuan/Projects/fund-system/collector')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import pymysql
 import pandas as pd
@@ -12,14 +13,10 @@ import numpy as np
 from datetime import datetime
 import akshare as ak
 
-DB_CONFIG = {
-    'host': '127.0.0.1',
-    'port': 3307,
-    'user': 'fund',
-    'password': 'fund123',
-    'database': 'fund_system',
-    'charset': 'utf8mb4'
-}
+from config import settings
+
+# 数据库配置（从统一配置读取）
+DB_CONFIG = settings.get_db_config()
 
 FUND_CODE = '011452'
 

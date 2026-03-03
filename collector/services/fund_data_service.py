@@ -16,15 +16,10 @@ import akshare as ak
 from datetime import datetime
 from loguru import logger
 
-# 数据库配置 - fund-mysql (13306)
-DB_CONFIG = {
-    'host': '127.0.0.1',
-    'port': 13306,
-    'user': 'root',
-    'password': 'root123',
-    'database': 'fund_system',
-    'charset': 'utf8mb4'
-}
+from config import settings
+
+# 数据库配置（从统一配置读取）
+DB_CONFIG = settings.get_db_config()
 
 
 class FundDataService:

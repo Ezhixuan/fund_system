@@ -8,6 +8,8 @@
 
 import os
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import logging
 from datetime import datetime
 
@@ -15,6 +17,8 @@ import pandas as pd
 import akshare as ak
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError
+
+from config import settings
 
 # 配置日志
 logging.basicConfig(
@@ -27,14 +31,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# 数据库配置
-DB_CONFIG = {
-    'host': '127.0.0.1',
-    'port': 3307,
-    'user': 'fund',
-    'password': 'fund123',
-    'database': 'fund_system'
-}
+# 数据库配置（从统一配置读取）
+DB_CONFIG = settings.get_db_config()
 
 
 def create_engine_connection():

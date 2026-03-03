@@ -3,18 +3,18 @@
 基金指标数据初始化脚本
 由于 fund_nav 只有1天数据，生成基础指标记录用于测试
 """
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import pymysql
 from datetime import datetime
 import random
 
-DB_CONFIG = {
-    'host': '127.0.0.1',
-    'port': 3307,
-    'user': 'fund',
-    'password': 'fund123',
-    'database': 'fund_system',
-    'charset': 'utf8mb4'
-}
+from config import settings
+
+# 数据库配置（从统一配置读取）
+DB_CONFIG = settings.get_db_config()
 
 
 def generate_sample_metrics():

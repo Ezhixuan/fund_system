@@ -5,6 +5,8 @@
 """
 import os
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import pymysql
 import pandas as pd
 import numpy as np
@@ -12,15 +14,10 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional
 from decimal import Decimal
 
-# 数据库配置
-DB_CONFIG = {
-    'host': '127.0.0.1',
-    'port': 3307,
-    'user': 'fund',
-    'password': 'fund123',
-    'database': 'fund_system',
-    'charset': 'utf8mb4'
-}
+from config import settings
+
+# 数据库配置（从统一配置读取）
+DB_CONFIG = settings.get_db_config()
 
 
 class MetricsEngine:
