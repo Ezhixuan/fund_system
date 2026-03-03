@@ -33,7 +33,7 @@ public class CollectClientImpl implements CollectClient {
     @Autowired
     private ApiTraceService traceService;
 
-    @Value("${collector.url:http://localhost:5000}")
+    @Value("${collector.url:http://localhost:5005}")
     private String collectorUrl;
 
     @Override

@@ -265,11 +265,11 @@ def get_fund_nav_history(fund_code):
     """查询基金NAV历史"""
     try:
         logger.info(f"查询基金NAV历史: {fund_code}")
-        
+
         from services.fund_data_service import FundDataService
         service = FundDataService()
         nav_list = service.get_nav_history(fund_code, limit=30)
-        
+
         if nav_list:
             return jsonify({
                 'success': True,
@@ -282,29 +282,156 @@ def get_fund_nav_history(fund_code):
                 'errorCode': 'NAV_NOT_FOUND',
                 'message': f'基金 {fund_code} NAV历史未找到'
             }), 404
-            
+
     except Exception as e:
         logger.error(f"查询NAV历史失败: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+# ============ 新增：基金基础数据同步接口 ============
+
+@app.route('/api/fund/sync/basic', methods=['POST'])
+def sync_fund_basic():
+    """
+    同步基金基础数据
+    Request: { "force": false }  // force=true 强制同步，无视数据一致性
+    """
+    try:
+        data = request.get_json() or {}
+        force_sync = data.get('force', False)
+
+        logger.info(f"收到基金基础数据同步请求, force={force_sync}")
+
+        from services.fund_sync_service import FundSyncService
+        service = FundSyncService()
+
+        # 先检查数据状态
+        compare_result = service.compare_fund_data()
+
+        # 如果不需要同步且不是强制同步
+        if not compare_result.get('sync_needed') and not force_sync:
+            status = service.get_sync_status()
+            service.close()
+            return jsonify({
+                'success': True,
+                'data': {
+                    'synced': False,
+                    'message': '数据已是最新，无需同步',
+                    'status': status
+                }
+            })
+
+        # 执行同步
+        sync_result = service.sync_fund_basic_data()
+        service.close()
+
+        if sync_result['success']:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'synced': True,
+                    'totalSynced': sync_result['total_synced'],
+                    'failedCodes': sync_result['failed_codes'],
+                    'startTime': sync_result['start_time'],
+                    'endTime': sync_result['end_time'],
+                    'message': f'同步完成，共同步 {sync_result["total_synced"]} 只基金'
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '同步失败',
+                'details': sync_result
+            }), 500
+
+    except Exception as e:
+        logger.error(f"同步基金基础数据失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/fund/sync/status', methods=['GET'])
+def get_sync_status():
+    """获取基金数据同步状态"""
+    try:
+        from services.fund_sync_service import FundSyncService
+        service = FundSyncService()
+
+        # 获取比对结果
+        compare_result = service.compare_fund_data()
+        # 获取状态
+        status = service.get_sync_status()
+
+        service.close()
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'mysqlCount': compare_result['mysql_count'],
+                'akshareCount': compare_result['akshare_count'],
+                'missingCount': len(compare_result.get('missing_in_mysql', [])),
+                'syncNeeded': compare_result.get('sync_needed', False),
+                'syncRate': status.get('sync_rate', 0),
+                'isSynced': status.get('is_synced', False),
+                'checkTime': status.get('check_time')
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"获取同步状态失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 def init_scheduler():
     """初始化定时任务调度器"""
+    schedulers = {}
+
+    # 1. 初始化日内估值调度器
     try:
         from scheduler.intraday_scheduler import IntradayScheduler
-        scheduler = IntradayScheduler(data_manager)
-        scheduler.start()
-        logger.info("定时任务调度器已启动")
-        return scheduler
+        intraday_scheduler = IntradayScheduler(data_manager)
+        intraday_scheduler.start()
+        schedulers['intraday'] = intraday_scheduler
+        logger.info("日内估值调度器已启动")
     except Exception as e:
-        logger.error(f"定时任务调度器启动失败: {e}")
-        return None
+        logger.error(f"日内估值调度器启动失败: {e}")
+
+    # 2. 初始化基金数据同步调度器（每30天）
+    try:
+        from scheduler.fund_sync_scheduler import init_fund_sync_scheduler
+        fund_sync_scheduler = init_fund_sync_scheduler()
+        if fund_sync_scheduler:
+            schedulers['fund_sync'] = fund_sync_scheduler
+            logger.info("基金数据同步调度器已启动")
+    except Exception as e:
+        logger.error(f"基金数据同步调度器启动失败: {e}")
+
+    return schedulers if schedulers else None
+
+def init_startup_sync():
+    """初始化启动时同步检查"""
+    try:
+        # 检查环境变量，默认启用启动同步
+        enable_startup_sync = os.environ.get('ENABLE_STARTUP_SYNC', 'true').lower() == 'true'
+
+        if not enable_startup_sync:
+            logger.info("启动同步已禁用 (ENABLE_STARTUP_SYNC=false)")
+            return
+
+        from services.fund_sync_service import run_startup_sync
+        run_startup_sync()
+
+    except Exception as e:
+        logger.error(f"初始化启动同步失败: {e}")
+
 
 if __name__ == '__main__':
     # 启动定时任务
     scheduler = init_scheduler()
-    
+
+    # 启动时执行同步检查（在独立线程中，不阻塞服务启动）
+    init_startup_sync()
+
     # 启动Flask服务
-    port = int(os.environ.get('COLLECTOR_PORT', 5000))
+    port = int(os.environ.get('COLLECTOR_PORT', 5005))
     logger.info(f"启动基金采集服务，端口: {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
