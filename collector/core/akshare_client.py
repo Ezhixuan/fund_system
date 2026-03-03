@@ -10,15 +10,15 @@ from functools import wraps
 import pandas as pd
 import akshare as ak
 
-from config import settings
+from config.settings import Config
 
 logger = logging.getLogger(__name__)
 
 
 def retry_on_error(max_retries: int = None, delay: float = None):
     """重试装饰器"""
-    max_retries = max_retries or settings.retry_times
-    delay = delay or settings.retry_delay
+    max_retries = max_retries or Config.RETRY_TIMES
+    delay = delay or Config.RETRY_DELAY
     
     def decorator(func: Callable) -> Callable:
         @wraps(func)
@@ -43,7 +43,7 @@ class AkShareClient:
     """akshare客户端封装"""
     
     def __init__(self, delay: float = None):
-        self.delay = delay or settings.request_delay
+        self.delay = delay or Config.REQUEST_DELAY
         self._last_request_time = 0
     
     def _rate_limit(self):
