@@ -54,13 +54,28 @@ const searchFunds = async (query) => {
     searching.value = true
     try {
       const res = await searchFund(query)
+      console.log('搜索基金响应:', res)
+
+      // 处理不同可能的响应结构
+      let list = []
+      if (Array.isArray(res.data)) {
+        list = res.data
+      } else if (Array.isArray(res)) {
+        list = res
+      } else if (res.data && Array.isArray(res.data.data)) {
+        list = res.data.data
+      }
+
       // 兼容后端返回的下划线命名和驼峰命名
-      options.value = (res.data || []).map(item => ({
-        fundCode: item.fundCode || item.fund_code,
-        fundName: item.fundName || item.fund_name,
-        fundType: item.fundType || item.fund_type
-      }))
+      options.value = list.map(item => ({
+        fundCode: item.fundCode || item.fund_code || '',
+        fundName: item.fundName || item.fund_name || '',
+        fundType: item.fundType || item.fund_type || ''
+      })).filter(item => item.fundCode && item.fundName)
+
+      console.log('处理后的选项:', options.value)
     } catch (error) {
+      console.error('搜索基金失败:', error)
       options.value = []
     } finally {
       searching.value = false

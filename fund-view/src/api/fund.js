@@ -35,8 +35,8 @@ export function getLatestEstimate(fundCode) {
  */
 export function searchFund(keyword) {
   return request({
-    url: '/funds',
+    url: '/funds/search/suggest',
     method: 'get',
-    params: { keyword }
+    params: { keyword, limit: 20 }
   })
 }
