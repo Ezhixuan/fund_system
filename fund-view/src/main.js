@@ -4,6 +4,7 @@ import router from './router'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import './styles/twitter-ui.css'
 import * as ECharts from 'echarts'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 

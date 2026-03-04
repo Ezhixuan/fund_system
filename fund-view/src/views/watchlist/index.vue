@@ -267,86 +267,185 @@ onMounted(loadData)
 
 <style scoped lang="scss">
 .watchlist-page {
-  padding: 20px;
+  padding: 24px;
+  background: var(--bg-secondary);
+  min-height: 100vh;
 
+  /* 页面标题 */
   .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 
     h1 {
       margin: 0;
-      font-size: 24px;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
     }
   }
 
+  /* 统计卡片 - Twitter UI 风格 */
   .stats-cards {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 
     .stat-card {
-      flex: 1;
+      background: var(--bg-primary);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      padding: 24px;
       text-align: center;
+      transition: var(--transition);
+
+      &:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-4px);
+      }
 
       .stat-value {
-        font-size: 28px;
-        font-weight: bold;
-        color: #303133;
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--text-primary);
 
         &.text-success {
-          color: #67c23a;
+          color: #00ba7c;
         }
 
         &.text-warning {
-          color: #e6a23c;
+          color: #ffb347;
         }
       }
 
       .stat-label {
         margin-top: 8px;
-        color: #909399;
+        color: var(--text-secondary);
         font-size: 14px;
+        font-weight: 500;
       }
     }
   }
 
+  /* 筛选栏 */
   .filter-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    background: var(--bg-primary);
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
 
     .search-input {
-      width: 250px;
+      width: 280px;
+
+      :deep(.el-input__wrapper) {
+        border-radius: var(--radius-sm);
+        box-shadow: 0 0 0 1px var(--border-color) inset;
+
+        &.is-focus {
+          box-shadow: 0 0 0 1px var(--primary-color) inset;
+        }
+      }
     }
   }
 
+  /* 表格样式 */
   .watchlist-table {
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+
+    :deep(.el-table__header) {
+      th {
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        font-weight: 600;
+      }
+    }
+
+    :deep(.el-table__row) {
+      cursor: pointer;
+      transition: var(--transition);
+
+      &:hover {
+        background: var(--bg-hover);
+      }
+    }
+
     .fund-info {
       .fund-name {
-        font-weight: 500;
-        color: #303133;
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 15px;
       }
 
       .fund-code {
-        font-size: 12px;
-        color: #909399;
+        font-size: 13px;
+        color: var(--text-secondary);
         margin-top: 4px;
       }
     }
 
     .target-return {
-      color: #f56c6c;
+      color: #f4212e;
+      font-weight: 500;
     }
 
     .stop-loss {
-      color: #67c23a;
+      color: #00ba7c;
+      font-weight: 500;
     }
 
     .text-muted {
-      color: #909399;
+      color: var(--text-secondary);
+    }
+  }
+
+  /* 空状态 */
+  :deep(.el-empty) {
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    padding: 60px 0;
+  }
+
+  /* 响应式 */
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .stats-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .page-header {
+      flex-direction: column;
+      gap: 16px;
+      align-items: flex-start;
+
+      h1 {
+        font-size: 24px;
+      }
+    }
+
+    .filter-bar {
+      flex-direction: column;
+      gap: 12px;
+
+      .search-input {
+        width: 100%;
+      }
     }
   }
 }

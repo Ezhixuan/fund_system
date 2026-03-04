@@ -54,7 +54,12 @@ const searchFunds = async (query) => {
     searching.value = true
     try {
       const res = await searchFund(query)
-      options.value = res.data || []
+      // 兼容后端返回的下划线命名和驼峰命名
+      options.value = (res.data || []).map(item => ({
+        fundCode: item.fundCode || item.fund_code,
+        fundName: item.fundName || item.fund_name,
+        fundType: item.fundType || item.fund_type
+      }))
     } catch (error) {
       options.value = []
     } finally {
