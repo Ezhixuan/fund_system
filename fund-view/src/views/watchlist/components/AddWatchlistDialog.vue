@@ -136,6 +136,19 @@ const rules = {
   ]
 }
 
+// 重置表单（必须在 watch 之前定义，避免暂时性死区错误）
+const resetForm = () => {
+  form.value = {
+    fundCode: '',
+    fundName: '',
+    watchType: 2,
+    targetReturn: null,
+    stopLoss: null,
+    notes: ''
+  }
+  formRef.value?.resetFields()
+}
+
 // 监听编辑数据变化
 watch(() => props.editData, (val) => {
   if (val) {
@@ -151,19 +164,6 @@ watch(() => props.editData, (val) => {
     resetForm()
   }
 }, { immediate: true })
-
-// 重置表单
-const resetForm = () => {
-  form.value = {
-    fundCode: '',
-    fundName: '',
-    watchType: 2,
-    targetReturn: null,
-    stopLoss: null,
-    notes: ''
-  }
-  formRef.value?.resetFields()
-}
 
 // 关闭弹窗
 const handleClose = () => {
